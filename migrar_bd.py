@@ -68,6 +68,28 @@ def migrar_base_datos():
             else:
                 print("La tabla 'facturas' ya existe.")
             
+            # 3. Verificar si la columna 'notas' ya existe en la tabla 'clientes'
+            query_verificar_notas = text("""
+                SELECT COUNT(*) AS columna_existe
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = 'remodelacionesdb'
+                AND TABLE_NAME = 'clientes' 
+                AND COLUMN_NAME = 'notas'
+            """)
+            
+            resultado_notas = db.session.execute(query_verificar_notas).fetchone()
+            
+            # Si la columna no existe, agregarla
+            if resultado_notas and resultado_notas[0] == 0:
+                print("Agregando columna 'notas' a la tabla 'clientes'...")
+                query_agregar_notas = text("""
+                    ALTER TABLE clientes 
+                    ADD COLUMN notas TEXT
+                """)
+                db.session.execute(query_agregar_notas)
+            else:
+                print("La columna 'notas' ya existe en la tabla 'clientes'.")
+            
             # Confirmar los cambios
             db.session.commit()
             print("Migración completada con éxito.")

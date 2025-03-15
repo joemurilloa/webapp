@@ -7,3 +7,4 @@ gunicorn==20.1.0
 python-dotenv==1.0.0
 Flask-SQLAlchemy==3.0.3
 mysqlclient==2.1.1
+cryptography>=38.0.0

@@ -1,0 +1,492 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Clientes - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-clientes th, .table-clientes td {
+        vertical-align: middle;
+    }
+    
+    .badge-estado {
+        font-size: 85%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .filtro-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .actions-column {
+        width: 150px;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.765rem;
+    }
+    
+    .cliente-card {
+        transition: all 0.3s ease;
+    }
+    
+    .cliente-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card {
+        border-left: 4px solid #0d6efd;
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-users"></i> Gestión de Clientes
+                </h2>
+                <p class="text-center">Administre la información de sus clientes y vea su historial de proyectos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas de Clientes -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-normal mt-0">Total Clientes</h6>
+                        <h3 class="mt-1 mb-0">{{ total_clientes }}</h3>
+                    </div>
+                    <div class="avatar-sm">
+                        <span class="avatar-title bg-primary rounded">
+                            <i class="fas fa-users"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-normal mt-0">Clientes Nuevos (Mes)</h6>
+                        <h3 class="mt-1 mb-0">{{ clientes_nuevos }}</h3>
+                    </div>
+                    <div class="avatar-sm">
+                        <span class="avatar-title bg-success rounded">
+                            <i class="fas fa-user-plus"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-normal mt-0">Cotizaciones Activas</h6>
+                        <h3 class="mt-1 mb-0">{{ cotizaciones_activas }}</h3>
+                    </div>
+                    <div class="avatar-sm">
+                        <span class="avatar-title bg-info rounded">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-muted fw-normal mt-0">Facturas Pendientes</h6>
+                        <h3 class="mt-1 mb-0">{{ facturas_pendientes }}</h3>
+                    </div>
+                    <div class="avatar-sm">
+                        <span class="avatar-title bg-warning rounded">
+                            <i class="fas fa-file-invoice"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-filter"></i> Filtros de Búsqueda</h4>
+    </div>
+    <div class="card-body">
+        <form id="filtroForm" method="GET" action="{{ url_for('clientes') }}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="filtroNombre" class="form-label">Nombre o Apellido</label>
+                    <input type="text" class="form-control" id="filtroNombre" name="nombre" placeholder="Buscar por nombre o apellido" value="{{ request.args.get('nombre', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filtroTelefono" class="form-label">Teléfono</label>
+                    <input type="text" class="form-control" id="filtroTelefono" name="telefono" placeholder="Número de teléfono" value="{{ request.args.get('telefono', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filtroFechaRegistro" class="form-label">Registrado Después de</label>
+                    <input type="date" class="form-control" id="filtroFechaRegistro" name="fecha_registro" value="{{ request.args.get('fecha_registro', '') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Botón para Agregar Cliente -->
+<div class="text-end mb-3">
+    <button type="button" class="btn btn-success" id="btnNuevoCliente">
+        <i class="fas fa-plus"></i> Nuevo Cliente
+    </button>
+</div>
+
+<!-- Lista de Clientes -->
+<div class="row" id="listaClientes">
+    {% if clientes %}
+        {% for cliente in clientes %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card cliente-card h-100">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ cliente.nombre }} {{ cliente.apellido }}</h5>
+                        <span class="badge bg-primary">{{ cliente.cotizaciones|length }} proyecto(s)</span>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-phone text-primary me-2"></i> {{ cliente.telefono }}</li>
+                            <li class="mb-2"><i class="fas fa-envelope text-primary me-2"></i> {{ cliente.email }}</li>
+                            <li class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i> {{ cliente.direccion|truncate(30) }}</li>
+                            <li><i class="fas fa-calendar-alt text-primary me-2"></i> Cliente desde: {{ cliente.fecha_registro.strftime('%d/%m/%Y') }}</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-top-0">
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-ver-cliente" data-id="{{ cliente.id }}">
+                                <i class="fas fa-eye"></i> Ver Detalles
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-editar-cliente" data-id="{{ cliente.id }}">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> No se encontraron clientes.
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Agregar/Editar Cliente -->
+<div class="modal fade" id="clienteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="clienteModalTitle"><i class="fas fa-user"></i> Nuevo Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="clienteForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                        <div class="col-12">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="notas" class="form-label">Notas Adicionales</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="clienteId" name="cliente_id" value="">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalles del Cliente -->
+<div class="modal fade" id="detallesClienteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-user-circle"></i> Detalles del Cliente</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detallesClienteBody">
+                <!-- Contenido cargado por AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando información del cliente...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnEditarDesdeDetalles">
+                    <i class="fas fa-edit"></i> Editar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarClienteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar al cliente <strong id="nombreClienteEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer y también eliminará todas las cotizaciones y facturas asociadas.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales
+        const clienteModal = new bootstrap.Modal(document.getElementById('clienteModal'));
+        const detallesClienteModal = new bootstrap.Modal(document.getElementById('detallesClienteModal'));
+        const eliminarClienteModal = new bootstrap.Modal(document.getElementById('eliminarClienteModal'));
+        let clienteIdAEliminar = null;
+        
+        // Configurar botón de nuevo cliente
+        document.getElementById('btnNuevoCliente').addEventListener('click', function() {
+            // Limpiar formulario
+            document.getElementById('clienteForm').reset();
+            document.getElementById('clienteId').value = '';
+            document.getElementById('clienteModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Cliente';
+            
+            // Mostrar modal
+            clienteModal.show();
+        });
+        
+        // Configurar botones para ver detalles
+        document.querySelectorAll('.btn-ver-cliente').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const clienteId = this.dataset.id;
+                cargarDetallesCliente(clienteId);
+            });
+        });
+        
+        // Configurar botones para editar
+        document.querySelectorAll('.btn-editar-cliente').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const clienteId = this.dataset.id;
+                cargarDatosCliente(clienteId);
+            });
+        });
+        
+        // Configurar botón para editar desde detalles
+        document.getElementById('btnEditarDesdeDetalles').addEventListener('click', function() {
+            const clienteId = this.dataset.id;
+            if (clienteId) {
+                detallesClienteModal.hide();
+                setTimeout(() => {
+                    cargarDatosCliente(clienteId);
+                }, 500);
+            }
+        });
+        
+        // Manejar envío del formulario de cliente
+        document.getElementById('clienteForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const clienteId = document.getElementById('clienteId').value;
+            const url = clienteId ? `/actualizar-cliente/${clienteId}` : '/crear-cliente';
+            
+            // Enviar solicitud
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clienteModal.hide();
+                
+                if (data.success) {
+                    mostrarNotificacion(data.mensaje, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                clienteModal.hide();
+            });
+        });
+        
+        // Función para cargar detalles del cliente
+        function cargarDetallesCliente(clienteId) {
+            // Mostrar modal con spinner
+            detallesClienteModal.show();
+            
+            // Cargar datos
+            fetch(`/cliente/${clienteId}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('detallesClienteBody').innerHTML = html;
+                document.getElementById('btnEditarDesdeDetalles').dataset.id = clienteId;
+                
+                // Configurar botón eliminar si existe
+                const btnEliminar = document.getElementById('btnEliminarCliente');
+                if (btnEliminar) {
+                    btnEliminar.addEventListener('click', function() {
+                        const nombre = this.dataset.nombre;
+                        clienteIdAEliminar = this.dataset.id;
+                        
+                        document.getElementById('nombreClienteEliminar').textContent = nombre;
+                        detallesClienteModal.hide();
+                        
+                        setTimeout(() => {
+                            eliminarClienteModal.show();
+                        }, 500);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('detallesClienteBody').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error al cargar los detalles del cliente.
+                    </div>
+                `;
+            });
+        }
+        
+        // Función para cargar datos del cliente para edición
+        function cargarDatosCliente(clienteId) {
+            // Mostrar modal con datos vacíos por mientras
+            document.getElementById('clienteModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Cliente';
+            document.getElementById('clienteId').value = clienteId;
+            clienteModal.show();
+            
+            // Cargar datos
+            fetch(`/obtener-cliente/${clienteId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const cliente = data.cliente;
+                    
+                    // Llenar formulario
+                    document.getElementById('nombre').value = cliente.nombre;
+                    document.getElementById('apellido').value = cliente.apellido;
+                    document.getElementById('telefono').value = cliente.telefono;
+                    document.getElementById('email').value = cliente.email;
+                    document.getElementById('direccion').value = cliente.direccion;
+                    document.getElementById('notas').value = cliente.notas || '';
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    clienteModal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al cargar los datos del cliente', 'danger');
+                clienteModal.hide();
+            });
+        }
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (clienteIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-cliente/${clienteIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarClienteModal.hide();
+                    
+                    if (data.success) {
+                        mostrarNotificacion('Cliente eliminado correctamente', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarClienteModal.hide();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

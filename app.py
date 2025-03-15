@@ -6,6 +6,8 @@ from datetime import datetime
 from generador_pdf import generar_pdf
 from flask_sqlalchemy import SQLAlchemy
 from generador_pdf import generar_pdf, generar_pdf_factura
+from datetime import datetime, timedelta
+from sqlalchemy import func, extract, or_
 
 app = Flask(__name__)
 
@@ -45,10 +47,11 @@ class Cliente(db.Model):
     email = db.Column(db.String(100), nullable=False)
     direccion = db.Column(db.Text, nullable=False)
     fecha_registro = db.Column(db.DateTime, default=datetime.now)
+    notas = db.Column(db.Text, nullable=True)  # Nuevo campo
     
     # Relación con cotizaciones
     cotizaciones = db.relationship('Cotizacion', backref='cliente', lazy=True)
-    
+
 
 
 
@@ -733,5 +736,229 @@ def eliminar_factura(factura_id):
             'mensaje': f'Error al eliminar la factura: {str(e)}'
         }), 500
     
+@app.route('/clientes')
+def clientes():
+    # Obtener parámetros de filtrado
+    nombre_filtro = request.args.get('nombre', '')
+    telefono_filtro = request.args.get('telefono', '')
+    fecha_registro_filtro = request.args.get('fecha_registro', '')
+    
+    # Consulta base
+    query = Cliente.query
+    
+    # Aplicar filtros
+    if nombre_filtro:
+        query = query.filter(
+            or_(
+                Cliente.nombre.like(f'%{nombre_filtro}%'),
+                Cliente.apellido.like(f'%{nombre_filtro}%')
+            )
+        )
+    
+    if telefono_filtro:
+        query = query.filter(Cliente.telefono.like(f'%{telefono_filtro}%'))
+    
+    if fecha_registro_filtro:
+        fecha_registro_obj = datetime.strptime(fecha_registro_filtro, '%Y-%m-%d')
+        query = query.filter(Cliente.fecha_registro >= fecha_registro_obj)
+    
+    # Obtener clientes
+    clientes = query.order_by(Cliente.nombre).all()
+    
+    # Estadísticas
+    total_clientes = Cliente.query.count()
+    
+    # Clientes nuevos del mes actual
+    primer_dia_mes = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    clientes_nuevos = Cliente.query.filter(Cliente.fecha_registro >= primer_dia_mes).count()
+    
+    # Cotizaciones activas (pendientes o aprobadas)
+    cotizaciones_activas = Cotizacion.query.filter(
+        Cotizacion.estado.in_(['Pendiente', 'Aprobada']),
+        Cotizacion.facturada == False
+    ).count()
+    
+    # Facturas pendientes
+    facturas_pendientes = Factura.query.filter_by(estado_pago='Pendiente').count()
+    
+    return render_template(
+        'clientes.html',
+        clientes=clientes,
+        total_clientes=total_clientes,
+        clientes_nuevos=clientes_nuevos,
+        cotizaciones_activas=cotizaciones_activas,
+        facturas_pendientes=facturas_pendientes
+    )
+
+@app.route('/crear-cliente', methods=['POST'])
+def crear_cliente():
+    try:
+        # Obtener datos del formulario
+        nombre = request.form.get('nombre', '')
+        apellido = request.form.get('apellido', '')
+        telefono = request.form.get('telefono', '')
+        email = request.form.get('email', '')
+        direccion = request.form.get('direccion', '')
+        notas = request.form.get('notas', '')
+        
+        # Verificar si el cliente ya existe
+        cliente_existente = Cliente.query.filter_by(
+            email=email,
+            telefono=telefono
+        ).first()
+        
+        if cliente_existente:
+            return jsonify({
+                'success': False,
+                'mensaje': 'Ya existe un cliente con este email y teléfono'
+            })
+        
+        # Crear nuevo cliente
+        nuevo_cliente = Cliente(
+            nombre=nombre,
+            apellido=apellido,
+            telefono=telefono,
+            email=email,
+            direccion=direccion,
+            notas=notas
+        )
+        
+        # Guardar en la base de datos
+        db.session.add(nuevo_cliente)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Cliente creado exitosamente',
+            'cliente_id': nuevo_cliente.id
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ ERROR: {str(e)}")
+        return jsonify({
+            'success': False,
+            'mensaje': f'Error al crear el cliente: {str(e)}'
+        }), 500
+
+@app.route('/obtener-cliente/<int:cliente_id>')
+def obtener_cliente(cliente_id):
+    try:
+        cliente = Cliente.query.get_or_404(cliente_id)
+        
+        # Convertir a formato JSON compatible
+        cliente_data = {
+            'id': cliente.id,
+            'nombre': cliente.nombre,
+            'apellido': cliente.apellido,
+            'telefono': cliente.telefono,
+            'email': cliente.email,
+            'direccion': cliente.direccion,
+            'notas': cliente.notas
+        }
+        
+        return jsonify({
+            'success': True,
+            'cliente': cliente_data
+        })
+    
+    except Exception as e:
+        print(f"❌ ERROR: {str(e)}")
+        return jsonify({
+            'success': False,
+            'mensaje': f'Error al obtener el cliente: {str(e)}'
+        }), 500
+
+@app.route('/actualizar-cliente/<int:cliente_id>', methods=['POST'])
+def actualizar_cliente(cliente_id):
+    try:
+        # Buscar cliente
+        cliente = Cliente.query.get_or_404(cliente_id)
+        
+        # Actualizar datos
+        cliente.nombre = request.form.get('nombre', cliente.nombre)
+        cliente.apellido = request.form.get('apellido', cliente.apellido)
+        cliente.telefono = request.form.get('telefono', cliente.telefono)
+        cliente.email = request.form.get('email', cliente.email)
+        cliente.direccion = request.form.get('direccion', cliente.direccion)
+        cliente.notas = request.form.get('notas', cliente.notas)
+        
+        # Guardar cambios
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Cliente actualizado exitosamente'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ ERROR: {str(e)}")
+        return jsonify({
+            'success': False,
+            'mensaje': f'Error al actualizar el cliente: {str(e)}'
+        }), 500
+
+@app.route('/eliminar-cliente/<int:cliente_id>', methods=['POST'])
+def eliminar_cliente(cliente_id):
+    try:
+        # Buscar cliente
+        cliente = Cliente.query.get_or_404(cliente_id)
+        
+        # Eliminar el cliente (las cotizaciones y facturas relacionadas se eliminarán por cascade)
+        db.session.delete(cliente)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'mensaje': 'Cliente eliminado exitosamente'
+        })
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"❌ ERROR: {str(e)}")
+        return jsonify({
+            'success': False,
+            'mensaje': f'Error al eliminar el cliente: {str(e)}'
+        }), 500
+
+@app.route('/cliente/<int:cliente_id>')
+def cliente_detalles(cliente_id):
+    # Obtener cliente
+    cliente = Cliente.query.get_or_404(cliente_id)
+    
+    # Obtener estadísticas
+    cotizaciones_aprobadas = sum(1 for c in cliente.cotizaciones if c.estado == 'Aprobada')
+    cotizaciones_rechazadas = sum(1 for c in cliente.cotizaciones if c.estado == 'Rechazada')
+    
+    # Obtener facturas asociadas al cliente
+    facturas = Factura.query.join(Cotizacion).filter(Cotizacion.cliente_id == cliente_id).all()
+    
+    # Calcular valor total y porcentajes
+    valor_total = sum(c.total for c in cliente.cotizaciones)
+    porcentaje_aprobado = 0
+    porcentaje_pendiente = 0
+    porcentaje_rechazado = 0
+    
+    if cliente.cotizaciones and valor_total > 0:
+        valor_aprobado = sum(c.total for c in cliente.cotizaciones if c.estado == 'Aprobada')
+        valor_pendiente = sum(c.total for c in cliente.cotizaciones if c.estado == 'Pendiente')
+        valor_rechazado = sum(c.total for c in cliente.cotizaciones if c.estado == 'Rechazada')
+        
+        porcentaje_aprobado = round((valor_aprobado / valor_total) * 100)
+        porcentaje_pendiente = round((valor_pendiente / valor_total) * 100)
+        porcentaje_rechazado = round((valor_rechazado / valor_total) * 100)
+    
+    return render_template(
+        'cliente_detalles.html',
+        cliente=cliente,
+        cotizaciones_aprobadas=cotizaciones_aprobadas,
+        cotizaciones_rechazadas=cotizaciones_rechazadas,
+        facturas=facturas,
+        valor_total=valor_total,
+        porcentaje_aprobado=porcentaje_aprobado,
+        porcentaje_pendiente=porcentaje_pendiente,
+        porcentaje_rechazado=porcentaje_rechazado
+    )   
 if __name__ == '__main__':
     app.run(debug=True)

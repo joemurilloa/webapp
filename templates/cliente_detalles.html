@@ -1,0 +1,144 @@
+<div class="row">
+    <!-- Información básica del cliente -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Información Personal</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Nombre:</strong> {{ cliente.nombre }} {{ cliente.apellido }}</p>
+                <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
+                <p><strong>Email:</strong> {{ cliente.email }}</p>
+                <p><strong>Dirección:</strong> {{ cliente.direccion }}</p>
+                <p><strong>Fecha de registro:</strong> {{ cliente.fecha_registro.strftime('%d/%m/%Y') }}</p>
+                
+                {% if cliente.notas %}
+                <div class="mt-3">
+                    <strong>Notas:</strong>
+                    <p class="text-muted fst-italic">{{ cliente.notas }}</p>
+                </div>
+                {% endif %}
+                
+                <button type="button" id="btnEliminarCliente" class="btn btn-danger mt-3" 
+                        data-id="{{ cliente.id }}" 
+                        data-nombre="{{ cliente.nombre }} {{ cliente.apellido }}">
+                    <i class="fas fa-trash"></i> Eliminar Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Resumen de actividad -->
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Resumen de Actividad</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <h2 class="text-primary">{{ cliente.cotizaciones|length }}</h2>
+                        <p class="text-muted">Cotizaciones</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <h2 class="text-success">{{ cotizaciones_aprobadas }}</h2>
+                        <p class="text-muted">Aprobadas</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <h2 class="text-danger">{{ cotizaciones_rechazadas }}</h2>
+                        <p class="text-muted">Rechazadas</p>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <h2 class="text-info">{{ facturas|length }}</h2>
+                        <p class="text-muted">Facturas</p>
+                    </div>
+                </div>
+                
+                <div class="mt-3">
+                    <h6>Valor Total de Proyectos: <span class="text-primary">L. {{ valor_total|round(2) }}</span></h6>
+                    
+                    <!-- Barra de progreso simplificada -->
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-success" style="width: {{ porcentaje_aprobado }}%"></div>
+                        <div class="progress-bar bg-warning" style="width: {{ porcentaje_pendiente }}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {{ porcentaje_rechazado }}%"></div>
+                    </div>
+                    
+                    <!-- Leyenda simplificada -->
+                    <div class="row mt-2 mb-3">
+                        <div class="col-4 text-center">
+                            <span class="badge bg-success">Aprobado: {{ porcentaje_aprobado }}%</span>
+                        </div>
+                        <div class="col-4 text-center">
+                            <span class="badge bg-warning">Pendiente: {{ porcentaje_pendiente }}%</span>
+                        </div>
+                        <div class="col-4 text-center">
+                            <span class="badge bg-danger">Rechazado: {{ porcentaje_rechazado }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Últimas cotizaciones -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-history"></i> Últimos Proyectos</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Número</th>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Total</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if cliente.cotizaciones %}
+                                {% for cotizacion in cliente.cotizaciones[:5] %}
+                                    <tr>
+                                        <td>{{ cotizacion.numero_cotizacion }}</td>
+                                        <td>{{ cotizacion.fecha_creacion.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ cotizacion.tipo_proyecto }}</td>
+                                        <td>L. {{ cotizacion.total|round(2) }}</td>
+                                        <td>
+                                            {% if cotizacion.estado == 'Pendiente' %}
+                                                <span class="badge bg-warning">Pendiente</span>
+                                            {% elif cotizacion.estado == 'Aprobada' %}
+                                                <span class="badge bg-success">Aprobada</span>
+                                            {% elif cotizacion.estado == 'Rechazada' %}
+                                                <span class="badge bg-danger">Rechazada</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('ver_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}" class="btn btn-sm btn-info">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-3">No hay cotizaciones registradas</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                {% if cliente.cotizaciones|length > 5 %}
+                    <div class="text-center py-2">
+                        <a href="{{ url_for('historial') }}?cliente={{ cliente.nombre }} {{ cliente.apellido }}" class="btn btn-sm btn-link">
+                            Ver todas las cotizaciones ({{ cliente.cotizaciones|length }})
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

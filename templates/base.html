@@ -53,7 +53,21 @@
                         </li>
                     </ul>
                 </li>
-                
+                <!-- Menu Clientes -->
+    <li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if '/cliente' in request.path %}active{% endif %}" 
+       href="#" id="clientesDropdown" role="button" 
+       data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-users"></i> Clientes
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="clientesDropdown">
+        <li>
+            <a class="dropdown-item" href="{{ url_for('clientes') }}">
+                <i class="fas fa-address-book"></i> Gestión de Clientes
+            </a>
+        </li>
+    </ul>
+</li>
                 <!-- Menú desplegable de Facturación -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {% if '/factura' in request.path %}active{% endif %}" 
@@ -119,6 +133,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- JavaScript personalizado -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/clientes.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>
