@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Cotizaciones - Remodelaciones WM{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Estilos personalizados -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilos.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Barra de navegación -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">
+            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" height="40" class="me-2">
+            Remodelaciones WM
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
+                        <i class="fas fa-home"></i> Inicio
+                    </a>
+                </li>
+                
+                <!-- Menú desplegable de Cotizaciones -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if '/cotizacion' in request.path %}active{% endif %}" 
+                       href="#" id="cotizacionesDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-invoice-dollar"></i> Cotizaciones
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="cotizacionesDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('index') }}">
+                                <i class="fas fa-plus-circle"></i> Nueva Cotización
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('historial') }}">
+                                <i class="fas fa-history"></i> Historial de Cotizaciones
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- Menú desplegable de Facturación -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if '/factura' in request.path %}active{% endif %}" 
+                       href="#" id="facturacionDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-file-invoice"></i> Facturación
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="facturacionDropdown">
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('facturacion') }}">
+                                <i class="fas fa-plus-circle"></i> Generar Factura
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ url_for('historial_facturas') }}">
+                                <i class="fas fa-history"></i> Historial de Facturas
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- Configuración -->
+                <li class="nav-item">
+                    <a class="nav-link {% if request.path == '/configuracion' %}active{% endif %}" href="#">
+                        <i class="fas fa-cog"></i> Configuración
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+    <!-- Contenido principal -->
+    <main class="container py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Pie de página -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Remodelaciones William Murillo</h5>
+                    <p>Especialistas en remodelación de baños y cocinas</p>
+                    <p><i class="fas fa-map-marker-alt"></i> San Pedro Sula, Honduras</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5>Contacto</h5>
+                    <p><i class="fas fa-phone"></i> +504 XXXX-XXXX</p>
+                    <p><i class="fas fa-envelope"></i> contacto@remodelacioneswm.com</p>
+                </div>
+            </div>
+            <hr>
+            <div class="text-center">
+                <p>&copy; 2024 Remodelaciones William Murillo. Todos los derechos reservados.</p>
+                <p class="small">Desarrollado por Joe Murillo</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- JavaScript personalizado -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

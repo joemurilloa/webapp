@@ -1,0 +1,53 @@
+{
+    "numero_cotizacion": "COT-20250314-153826",
+    "datos_cliente": {
+        "nombre": "joe",
+        "apellido": "murillo",
+        "telefono": "98053628",
+        "email": "joemurillo95@gmail.com",
+        "direccion": "Colonia el carmen inva calle principal (al entrar a la colonia continuar hacia adelante)casa #8 bloque A-2\r\ncasa blanca portones negros",
+        "fecha": "14/03/2025"
+    },
+    "datos_proyecto": {
+        "tipo": "Remodelaci\u00f3n de Ba\u00f1o",
+        "descripcion": "remodelacion",
+        "area": "42",
+        "presupuesto": "50000"
+    },
+    "items": [
+        {
+            "descripcion": "azulejo",
+            "cantidad": "2",
+            "unidad": "Metro",
+            "precio_unitario": "2222",
+            "subtotal": "4444.00"
+        },
+        {
+            "descripcion": "otros",
+            "cantidad": "1",
+            "unidad": "Metro\u00b2",
+            "precio_unitario": "500",
+            "subtotal": "500.00"
+        },
+        {
+            "descripcion": "",
+            "cantidad": "",
+            "unidad": "",
+            "precio_unitario": "",
+            "subtotal": ""
+        }
+    ],
+    "totales": {
+        "subtotal": "4944.00",
+        "impuesto": "741.60",
+        "descuento": "0",
+        "total": "5685.60"
+    },
+    "condiciones": {
+        "tiempo_entrega": "45 dias de trabajo",
+        "forma_pago": "50% anticipo, 50% contra entrega",
+        "validez": "20 d\u00edas",
+        "notas": "gg"
+    },
+    "fecha_creacion": "2025-03-14 15:38:27"
+}

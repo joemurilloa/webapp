@@ -1,0 +1,394 @@
+{% extends 'base.html' %}
+
+{% block title %}Cotización {{ cotizacion.numero_cotizacion }} - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .cotizacion-header {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .info-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-section h4 {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .item-row {
+        border-bottom: 1px solid #e9ecef;
+        padding: 8px 0;
+    }
+    
+    .totales-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    
+    .badge-estado {
+        font-size: 100%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .actions-bar {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('historial') }}">Historial</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Cotización {{ cotizacion.numero_cotizacion }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Cabecera de cotización -->
+<div class="cotizacion-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-2">Cotización: {{ cotizacion.numero_cotizacion }}</h2>
+            <p class="mb-1">Fecha: {{ cotizacion.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+            <p class="mb-0">Estado: 
+                {% if cotizacion.estado == 'Pendiente' %}
+                    <span class="badge bg-warning text-dark badge-estado">Pendiente</span>
+                {% elif cotizacion.estado == 'Aprobada' %}
+                    <span class="badge bg-success badge-estado">Aprobada</span>
+                {% elif cotizacion.estado == 'Rechazada' %}
+                    <span class="badge bg-danger badge-estado">Rechazada</span>
+                {% else %}
+                    <span class="badge bg-secondary badge-estado">{{ cotizacion.estado }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('descargar_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}" class="btn btn-primary">
+                <i class="fas fa-download"></i> Descargar PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información del cliente -->
+    <div class="col-md-6">
+        <div class="card info-section">
+            <div class="card-body">
+                <h4><i class="fas fa-user"></i> Información del Cliente</h4>
+                <div class="row">
+                    <div class="col-md-4 info-label">Nombre:</div>
+                    <div class="col-md-8">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Teléfono:</div>
+                    <div class="col-md-8">{{ cliente.telefono }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Email:</div>
+                    <div class="col-md-8">{{ cliente.email }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Dirección:</div>
+                    <div class="col-md-8">{{ cliente.direccion }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detalles del proyecto -->
+    <div class="col-md-6">
+        <div class="card info-section">
+            <div class="card-body">
+                <h4><i class="fas fa-toolbox"></i> Detalles del Proyecto</h4>
+                <div class="row">
+                    <div class="col-md-4 info-label">Tipo:</div>
+                    <div class="col-md-8">{{ cotizacion.tipo_proyecto }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Área (m²):</div>
+                    <div class="col-md-8">{{ cotizacion.area }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Presupuesto:</div>
+                    <div class="col-md-8">L. {{ cotizacion.presupuesto|round(2) }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Descripción:</div>
+                    <div class="col-md-8">{{ cotizacion.descripcion }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Materiales y servicios -->
+<div class="card info-section mt-4">
+    <div class="card-body">
+        <h4><i class="fas fa-list"></i> Materiales y Servicios</h4>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descripción</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-center">Unidad</th>
+                        <th class="text-right">Precio Unit.</th>
+                        <th class="text-right">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ item.descripcion }}</td>
+                            <td class="text-center">{{ item.cantidad }}</td>
+                            <td class="text-center">{{ item.unidad }}</td>
+                            <td class="text-right">L. {{ item.precio_unitario|round(2) }}</td>
+                            <td class="text-right">L. {{ item.subtotal|round(2) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Totales -->
+        <div class="row">
+            <div class="col-md-6 offset-md-6">
+                <div class="totales-section">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Subtotal:</span>
+                        <span>L. {{ cotizacion.subtotal|round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Impuesto (15%):</span>
+                        <span>L. {{ cotizacion.impuesto|round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Descuento:</span>
+                        <span>L. {{ cotizacion.descuento|round(2) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span class="info-label">TOTAL:</span>
+                        <span>L. {{ cotizacion.total|round(2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Términos y condiciones -->
+<div class="card info-section mt-4">
+    <div class="card-body">
+        <h4><i class="fas fa-file-contract"></i> Términos y Condiciones</h4>
+        <div class="row">
+            <div class="col-md-3 info-label">Tiempo de Entrega:</div>
+            <div class="col-md-9">{{ cotizacion.tiempo_entrega }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3 info-label">Forma de Pago:</div>
+            <div class="col-md-9">{{ cotizacion.forma_pago }}</div>
+        </div>
+        <div class="row mt-2">
+            <div class="col-md-3 info-label">Validez de la Oferta:</div>
+            <div class="col-md-9">{{ cotizacion.validez }}</div>
+        </div>
+        {% if cotizacion.notas %}
+        <div class="row mt-2">
+            <div class="col-md-3 info-label">Notas Adicionales:</div>
+            <div class="col-md-9">{{ cotizacion.notas }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Agregar botones de aprobación/rechazo para cotizaciones pendientes -->
+{% if cotizacion.estado == 'Pendiente' %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="card-title mb-0"><i class="fas fa-tasks"></i> Acciones Disponibles</h4>
+    </div>
+    <div class="card-body">
+        <p>Esta cotización está pendiente de aprobación. Puede aprobarla o rechazarla:</p>
+        <div class="d-flex gap-2">
+            <button id="btnAprobar" class="btn btn-success">
+                <i class="fas fa-check"></i> Aprobar Cotización
+            </button>
+            <button id="btnRechazar" class="btn btn-danger">
+                <i class="fas fa-times"></i> Rechazar Cotización
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Barra de acciones -->
+<div class="actions-bar text-center">
+    <a href="{{ url_for('historial') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Historial
+    </a>
+    <a href="{{ url_for('descargar_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}" class="btn btn-primary">
+        <i class="fas fa-download"></i> Descargar PDF
+    </a>
+    <button type="button" class="btn btn-danger btn-eliminar" 
+            data-id="{{ cotizacion.id }}" 
+            data-numero="{{ cotizacion.numero_cotizacion }}">
+        <i class="fas fa-trash"></i> Eliminar Cotización
+    </button>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar la cotización <strong id="numeroEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal de eliminación
+        const eliminarModal = new bootstrap.Modal(document.getElementById('eliminarModal'));
+        let cotizacionIdAEliminar = null;
+        
+        // Configurar botón para eliminar
+        document.querySelector('.btn-eliminar').addEventListener('click', function() {
+            cotizacionIdAEliminar = this.dataset.id;
+            document.getElementById('numeroEliminar').textContent = this.dataset.numero;
+            eliminarModal.show();
+        });
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (cotizacionIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-cotizacion/${cotizacionIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarModal.hide();
+                    
+                    if (data.success) {
+                        // Redirigir al historial
+                        window.location.href = "{{ url_for('historial') }}";
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarModal.hide();
+                });
+            }
+        });
+        
+        // Configurar botones de aprobación/rechazo si existen
+        const btnAprobar = document.getElementById('btnAprobar');
+        const btnRechazar = document.getElementById('btnRechazar');
+        
+        if (btnAprobar) {
+            btnAprobar.addEventListener('click', function() {
+                if (confirm('¿Está seguro que desea aprobar esta cotización?')) {
+                    fetch(`/actualizar-estado-cotizacion/{{ cotizacion.id }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            estado: 'Aprobada'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarNotificacion('Cotización aprobada correctamente', 'success');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    });
+                }
+            });
+        }
+        
+        if (btnRechazar) {
+            btnRechazar.addEventListener('click', function() {
+                if (confirm('¿Está seguro que desea rechazar esta cotización?')) {
+                    fetch(`/actualizar-estado-cotizacion/{{ cotizacion.id }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            estado: 'Rechazada'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            mostrarNotificacion('Cotización rechazada correctamente', 'success');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    });
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
