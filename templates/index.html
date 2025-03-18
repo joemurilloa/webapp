@@ -57,7 +57,34 @@
             <h4><i class="fas fa-user"></i> Información del Cliente</h4>
         </div>
         <div class="card-body">
-            <div class="row g-3">
+            <!-- Selector de cliente existente -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="usarClienteExistente">
+                        <label class="form-check-label fw-bold" for="usarClienteExistente">
+                            Usar cliente existente
+                        </label>
+                    </div>
+                    
+                    <div id="clienteExistenteContainer" class="mb-3" style="display: none;">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="buscarCliente" placeholder="Buscar cliente por nombre, teléfono o email...">
+                            <button class="btn btn-outline-secondary" type="button" id="btnBuscarCliente">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="form-text">Escriba al menos 3 caracteres para iniciar la búsqueda</div>
+                        
+                        <div id="resultadosBusqueda" class="list-group mt-2" style="display: none; max-height: 200px; overflow-y: auto;">
+                            <!-- Los resultados se cargarán dinámicamente aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Formulario de datos del cliente -->
+            <div class="row g-3" id="datosClienteForm">
                 <div class="col-md-6">
                     <label for="nombre" class="form-label">Nombre</label>
                     <input type="text" class="form-control" id="nombre" name="nombre" required>
@@ -93,6 +120,8 @@
                         Por favor ingrese la dirección.
                     </div>
                 </div>
+                <!-- Campo oculto para el ID del cliente -->
+                <input type="hidden" id="cliente_id" name="cliente_id" value="">
             </div>
         </div>
     </div>

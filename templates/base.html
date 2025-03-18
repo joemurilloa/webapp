@@ -16,123 +16,119 @@
 </head>
 <body>
     <!-- Barra de navegación -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-        <a class="navbar-brand" href="/">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" height="40" class="me-2">
-            WNL FLOORING
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                        <i class="fas fa-tachometer-alt"></i> Finanzas
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">
-                        <i class="fas fa-home"></i> Inicio
-                    </a>
-                </li>
-                <!-- Menú desplegable de Planillas -->
-<li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle {% if '/planilla' in request.path or '/empleado' in request.path %}active{% endif %}" 
-       href="#" id="planillasDropdown" role="button" 
-       data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-user-tie"></i> Planillas
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="planillasDropdown">
-        <li>
-            <a class="dropdown-item" href="{{ url_for('empleados') }}">
-                <i class="fas fa-users"></i> Gestión de Empleados
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" height="40" class="me-2">
+                WNL FLOORING
             </a>
-        </li>
-        <li>
-            <a class="dropdown-item" href="{{ url_for('crear_planilla') }}">
-                <i class="fas fa-plus-circle"></i> Nueva Planilla
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item" href="{{ url_for('lista_planillas') }}">
-                <i class="fas fa-history"></i> Historial de Planillas
-            </a>
-        </li>
-        <li>
-            <a class="dropdown-item" href="{{ url_for('reportes_planillas') }}">
-                <i class="fas fa-chart-line"></i> Reportes
-            </a>
-        </li>
-    </ul>
-</li>
-                <!-- Menú desplegable de Cotizaciones -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if '/cotizacion' in request.path %}active{% endif %}" 
-                       href="#" id="cotizacionesDropdown" role="button" 
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-file-invoice-dollar"></i> Cotizaciones
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="cotizacionesDropdown">
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('index') }}">
-                                <i class="fas fa-plus-circle"></i> Nueva Cotización
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('historial') }}">
-                                <i class="fas fa-history"></i> Historial de Cotizaciones
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                <!-- Menu Clientes -->
-    <li class="nav-item dropdown">
-    <a class="nav-link dropdown-toggle {% if '/cliente' in request.path %}active{% endif %}" 
-       href="#" id="clientesDropdown" role="button" 
-       data-bs-toggle="dropdown" aria-expanded="false">
-        <i class="fas fa-users"></i> Clientes
-    </a>
-    <ul class="dropdown-menu" aria-labelledby="clientesDropdown">
-        <li>
-            <a class="dropdown-item" href="{{ url_for('clientes') }}">
-                <i class="fas fa-address-book"></i> Gestión de Clientes
-            </a>
-        </li>
-    </ul>
-</li>
-                <!-- Menú desplegable de Facturación -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if '/factura' in request.path %}active{% endif %}" 
-                       href="#" id="facturacionDropdown" role="button" 
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-file-invoice"></i> Facturación
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="facturacionDropdown">
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('facturacion') }}">
-                                <i class="fas fa-plus-circle"></i> Generar Factura
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{{ url_for('historial_facturas') }}">
-                                <i class="fas fa-history"></i> Historial de Facturas
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-                
-                <!-- Configuración -->
-                <li class="nav-item">
-                    <a class="nav-link {% if request.path == '/configuracion' %}active{% endif %}" href="#">
-                        <i class="fas fa-cog"></i> Configuración
-                    </a>
-                </li>
-            </ul>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i> Finanzas
+                        </a>
+                    </li>
+                    <!-- Eliminado el botón de inicio -->
+                    <!-- Menú desplegable de Planillas -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/planilla' in request.path or '/empleado' in request.path %}active{% endif %}" 
+                           href="#" id="planillasDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-tie"></i> Planillas
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="planillasDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('empleados') }}">
+                                    <i class="fas fa-users"></i> Gestión de Empleados
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('crear_planilla') }}">
+                                    <i class="fas fa-plus-circle"></i> Nueva Planilla
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('lista_planillas') }}">
+                                    <i class="fas fa-history"></i> Historial de Planillas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('reportes_planillas') }}">
+                                    <i class="fas fa-chart-line"></i> Reportes
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- Menú desplegable de Cotizaciones -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/cotizacion' in request.path or '/nueva-cotizacion' in request.path %}active{% endif %}" 
+                           href="#" id="cotizacionesDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-file-invoice-dollar"></i> Cotizaciones
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="cotizacionesDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('nueva_cotizacion') }}">
+                                    <i class="fas fa-plus-circle"></i> Nueva Cotización
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('historial') }}">
+                                    <i class="fas fa-history"></i> Historial de Cotizaciones
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- Menu Clientes -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/cliente' in request.path %}active{% endif %}" 
+                           href="#" id="clientesDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-users"></i> Clientes
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="clientesDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('clientes') }}">
+                                    <i class="fas fa-address-book"></i> Gestión de Clientes
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <!-- Menú desplegable de Facturación -->
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if '/factura' in request.path %}active{% endif %}" 
+                           href="#" id="facturacionDropdown" role="button" 
+                           data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-file-invoice"></i> Facturación
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="facturacionDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('facturacion') }}">
+                                    <i class="fas fa-plus-circle"></i> Generar Factura
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('historial_facturas') }}">
+                                    <i class="fas fa-history"></i> Historial de Facturas
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    
+                    <!-- Configuración -->
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/configuracion' %}active{% endif %}" href="#">
+                            <i class="fas fa-cog"></i> Configuración
+                        </a>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
     <!-- Contenido principal -->
     <main class="container py-4">
         {% block content %}{% endblock %}

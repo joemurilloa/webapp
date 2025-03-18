@@ -1,0 +1,405 @@
+{% extends 'base.html' %}
+
+{% block title %}Factura {{ factura.numero_factura }} - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .factura-header {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .info-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-section h4 {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .item-row {
+        border-bottom: 1px solid #e9ecef;
+        padding: 8px 0;
+    }
+    
+    .totales-section {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+    }
+    
+    .badge-estado {
+        font-size: 100%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .actions-bar {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-full-width {
+            width: 100% !important;
+        }
+        
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3 no-print">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('historial_facturas') }}">Historial de Facturas</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Factura {{ factura.numero_factura }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Cabecera de factura -->
+<div class="factura-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-2">Factura: {{ factura.numero_factura }}</h2>
+            <p class="mb-1">Fecha de Emisión: {{ factura.fecha_emision.strftime('%d/%m/%Y') }}</p>
+            {% if factura.fecha_vencimiento %}
+            <p class="mb-1">Fecha de Vencimiento: {{ factura.fecha_vencimiento.strftime('%d/%m/%Y') }}</p>
+            {% endif %}
+            <p class="mb-1">Cotización relacionada: <a href="{{ url_for('ver_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}">{{ cotizacion.numero_cotizacion }}</a></p>
+            <p class="mb-0">Estado: 
+                {% if factura.estado_pago == 'Pendiente' %}
+                    <span class="badge bg-warning text-dark badge-estado">Pendiente</span>
+                {% elif factura.estado_pago == 'Pagado' %}
+                    <span class="badge bg-success badge-estado">Pagado</span>
+                {% elif factura.estado_pago == 'Parcial' %}
+                    <span class="badge bg-info badge-estado">Pago Parcial</span>
+                {% else %}
+                    <span class="badge bg-secondary badge-estado">{{ factura.estado_pago }}</span>
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0 no-print">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            <a href="{{ url_for('descargar_factura', numero_factura=factura.numero_factura) }}" class="btn btn-success">
+                <i class="fas fa-download"></i> Descargar PDF
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Información del cliente -->
+    <div class="col-md-6">
+        <div class="card info-section">
+            <div class="card-body">
+                <h4><i class="fas fa-user"></i> Información del Cliente</h4>
+                <div class="row">
+                    <div class="col-md-4 info-label">Nombre:</div>
+                    <div class="col-md-8">{{ cliente.nombre }} {{ cliente.apellido }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Teléfono:</div>
+                    <div class="col-md-8">{{ cliente.telefono }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Email:</div>
+                    <div class="col-md-8">{{ cliente.email }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Dirección:</div>
+                    <div class="col-md-8">{{ cliente.direccion }}</div>
+                </div>
+                {% if factura.rtn_cliente %}
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">RTN:</div>
+                    <div class="col-md-8">{{ factura.rtn_cliente }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detalles del proyecto -->
+    <div class="col-md-6">
+        <div class="card info-section">
+            <div class="card-body">
+                <h4><i class="fas fa-toolbox"></i> Detalles del Proyecto</h4>
+                <div class="row">
+                    <div class="col-md-4 info-label">Tipo:</div>
+                    <div class="col-md-8">{{ cotizacion.tipo_proyecto }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Descripción:</div>
+                    <div class="col-md-8">{{ cotizacion.descripcion }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Área (m²):</div>
+                    <div class="col-md-8">{{ cotizacion.area }}</div>
+                </div>
+                <div class="row mt-2">
+                    <div class="col-md-4 info-label">Método de Pago:</div>
+                    <div class="col-md-8">{{ factura.metodo_pago }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Materiales y servicios -->
+<div class="card info-section mt-4">
+    <div class="card-body">
+        <h4><i class="fas fa-list"></i> Materiales y Servicios</h4>
+        
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Descripción</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-center">Unidad</th>
+                        <th class="text-end">Precio Unit.</th>
+                        <th class="text-end">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ item.descripcion }}</td>
+                            <td class="text-center">{{ item.cantidad }}</td>
+                            <td class="text-center">{{ item.unidad }}</td>
+                            <td class="text-end">L. {{ item.precio_unitario|round(2) }}</td>
+                            <td class="text-end">L. {{ item.subtotal|round(2) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Totales -->
+        <div class="row">
+            <div class="col-md-6 offset-md-6">
+                <div class="totales-section">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Subtotal:</span>
+                        <span>L. {{ factura.subtotal|round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Impuesto (15%):</span>
+                        <span>L. {{ factura.impuesto|round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="info-label">Descuento:</span>
+                        <span>L. {{ factura.descuento|round(2) }}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span class="info-label">TOTAL:</span>
+                        <span>L. {{ factura.total|round(2) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notas y Condiciones -->
+{% if factura.notas %}
+<div class="card info-section mt-4">
+    <div class="card-body">
+        <h4><i class="fas fa-sticky-note"></i> Notas</h4>
+        <p>{{ factura.notas }}</p>
+    </div>
+</div>
+{% endif %}
+
+<!-- Sección para actualizar el estado (solo visible cuando no se imprime) -->
+<div class="card info-section mt-4 no-print">
+    <div class="card-header bg-primary text-white">
+        <h4 class="card-title mb-0"><i class="fas fa-tasks"></i> Acciones Disponibles</h4>
+    </div>
+    <div class="card-body">
+        <form id="actualizarEstadoForm">
+            <div class="row">
+                <div class="col-md-4">
+                    <label for="nuevoEstado" class="form-label">Actualizar Estado de Pago</label>
+                    <select class="form-select" id="nuevoEstado" name="estado_pago">
+                        <option value="Pendiente" {% if factura.estado_pago == 'Pendiente' %}selected{% endif %}>Pendiente</option>
+                        <option value="Pagado" {% if factura.estado_pago == 'Pagado' %}selected{% endif %}>Pagado</option>
+                        <option value="Parcial" {% if factura.estado_pago == 'Parcial' %}selected{% endif %}>Pago Parcial</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="notasEstado" class="form-label">Notas Adicionales</label>
+                    <input type="text" class="form-control" id="notasEstado" name="notas" value="{{ factura.notas }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Guardar Cambios
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Pie para impresión -->
+<div class="d-none d-print-block mt-5">
+    <div class="row">
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>Cliente: {{ cliente.nombre }} {{ cliente.apellido }}</p>
+            </div>
+        </div>
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>Por Remodelaciones William Murillo</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de acciones -->
+<div class="actions-bar text-center no-print">
+    <a href="{{ url_for('historial_facturas') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Historial
+    </a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+    <a href="{{ url_for('descargar_factura', numero_factura=factura.numero_factura) }}" class="btn btn-success">
+        <i class="fas fa-download"></i> Descargar PDF
+    </a>
+    <button type="button" class="btn btn-danger btn-eliminar" 
+            data-id="{{ factura.id }}" 
+            data-numero="{{ factura.numero_factura }}">
+        <i class="fas fa-trash"></i> Eliminar Factura
+    </button>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar la factura <strong id="numeroEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer. La cotización relacionada volverá a estar disponible para facturación.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal de eliminación
+        const eliminarModal = new bootstrap.Modal(document.getElementById('eliminarModal'));
+        let facturaIdAEliminar = null;
+        
+        // Configurar botón para eliminar
+        document.querySelector('.btn-eliminar').addEventListener('click', function() {
+            facturaIdAEliminar = this.dataset.id;
+            document.getElementById('numeroEliminar').textContent = this.dataset.numero;
+            eliminarModal.show();
+        });
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (facturaIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-factura/${facturaIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarModal.hide();
+                    
+                    if (data.success) {
+                        // Redirigir al historial
+                        window.location.href = "{{ url_for('historial_facturas') }}";
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarModal.hide();
+                });
+            }
+        });
+        
+        // Actualizar estado de la factura
+        document.getElementById('actualizarEstadoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Realizar solicitud AJAX para actualizar estado
+            fetch(`/actualizar-estado-factura/{{ factura.id }}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarNotificacion('Estado de factura actualizado correctamente', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al procesar la solicitud', 'danger');
+            });
+        });
+    });
+</script>
+{% endblock %}

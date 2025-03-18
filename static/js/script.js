@@ -137,3 +137,150 @@ function descargarArchivo(url, nombreArchivo) {
     enlace.click();
     document.body.removeChild(enlace);
 }
+
+// Funcionalidad para búsqueda y selección de clientes en el formulario de cotización
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si estamos en la página de cotizaciones
+    const usarClienteExistente = document.getElementById('usarClienteExistente');
+    if (!usarClienteExistente) return;
+    
+    // Referencias a elementos del DOM
+    const clienteExistenteContainer = document.getElementById('clienteExistenteContainer');
+    const buscarCliente = document.getElementById('buscarCliente');
+    const btnBuscarCliente = document.getElementById('btnBuscarCliente');
+    const resultadosBusqueda = document.getElementById('resultadosBusqueda');
+    
+    // Campos del formulario
+    const clienteIdInput = document.getElementById('cliente_id');
+    const nombreInput = document.getElementById('nombre');
+    const apellidoInput = document.getElementById('apellido');
+    const telefonoInput = document.getElementById('telefono');
+    const emailInput = document.getElementById('email');
+    const direccionInput = document.getElementById('direccion');
+    
+    // Mostrar/ocultar el buscador de clientes existentes
+    usarClienteExistente.addEventListener('change', function() {
+        clienteExistenteContainer.style.display = this.checked ? 'block' : 'none';
+        
+        // Si se desmarca, limpiar el cliente seleccionado
+        if (!this.checked) {
+            limpiarFormularioCliente();
+            clienteIdInput.value = '';
+        }
+    });
+    
+    // Función para limpiar el formulario
+    function limpiarFormularioCliente() {
+        nombreInput.value = '';
+        apellidoInput.value = '';
+        telefonoInput.value = '';
+        emailInput.value = '';
+        direccionInput.value = '';
+        clienteIdInput.value = '';
+    }
+    
+    // Búsqueda de clientes al escribir
+    let timeoutId;
+    buscarCliente.addEventListener('input', function() {
+        const busqueda = this.value.trim();
+        
+        // Limpiar timeout anterior
+        clearTimeout(timeoutId);
+        
+        // Ocultar resultados si la búsqueda está vacía
+        if (busqueda.length < 3) {
+            resultadosBusqueda.style.display = 'none';
+            return;
+        }
+        
+        // Esperar 300ms después de que el usuario deje de escribir para hacer la búsqueda
+        timeoutId = setTimeout(() => {
+            buscarClientes(busqueda);
+        }, 300);
+    });
+    
+    // También permitir búsqueda al hacer clic en el botón
+    btnBuscarCliente.addEventListener('click', function() {
+        const busqueda = buscarCliente.value.trim();
+        if (busqueda.length >= 3) {
+            buscarClientes(busqueda);
+        }
+    });
+    
+    // Función para buscar clientes
+    function buscarClientes(busqueda) {
+        // Mostrar indicador de carga
+        resultadosBusqueda.innerHTML = '<div class="p-3 text-center"><div class="spinner-border spinner-border-sm text-primary" role="status"></div> Buscando...</div>';
+        resultadosBusqueda.style.display = 'block';
+        
+        // Realizar solicitud AJAX
+        fetch(`/api/buscar-clientes?q=${encodeURIComponent(busqueda)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarResultadosBusqueda(data.clientes);
+                } else {
+                    resultadosBusqueda.innerHTML = `<div class="p-3 text-center text-danger">${data.mensaje}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                resultadosBusqueda.innerHTML = '<div class="p-3 text-center text-danger">Error al buscar clientes</div>';
+            });
+    }
+    
+    // Función para mostrar resultados de búsqueda
+    function mostrarResultadosBusqueda(clientes) {
+        // Limpiar resultados anteriores
+        resultadosBusqueda.innerHTML = '';
+        
+        if (clientes.length === 0) {
+            resultadosBusqueda.innerHTML = '<div class="p-3 text-center">No se encontraron clientes</div>';
+            return;
+        }
+        
+        // Crear elemento para cada cliente
+        clientes.forEach(cliente => {
+            const itemCliente = document.createElement('a');
+            itemCliente.href = '#';
+            itemCliente.className = 'list-group-item list-group-item-action';
+            itemCliente.innerHTML = `
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${cliente.nombre} ${cliente.apellido}</strong>
+                        <small class="d-block text-muted">${cliente.email}</small>
+                    </div>
+                    <span class="text-primary">${cliente.telefono}</span>
+                </div>
+            `;
+            
+            // Evento para seleccionar cliente
+            itemCliente.addEventListener('click', function(e) {
+                e.preventDefault();
+                seleccionarCliente(cliente);
+            });
+            
+            resultadosBusqueda.appendChild(itemCliente);
+        });
+    }
+    
+    // Función para seleccionar un cliente
+    function seleccionarCliente(cliente) {
+        // Llenar formulario con datos del cliente
+        nombreInput.value = cliente.nombre;
+        apellidoInput.value = cliente.apellido;
+        telefonoInput.value = cliente.telefono;
+        emailInput.value = cliente.email;
+        direccionInput.value = cliente.direccion;
+        clienteIdInput.value = cliente.id;
+        
+        // Ocultar resultados
+        resultadosBusqueda.style.display = 'none';
+        
+        // Mostrar nombre del cliente seleccionado en el campo de búsqueda
+        buscarCliente.value = `${cliente.nombre} ${cliente.apellido}`;
+        
+        // Mostrar notificación
+        mostrarNotificacion(`Cliente seleccionado: ${cliente.nombre} ${cliente.apellido}`, 'success');
+    }
+});

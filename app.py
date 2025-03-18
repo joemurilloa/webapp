@@ -211,8 +211,13 @@ class ProyectoEmpleado(db.Model):
 # Rutas
 @app.route('/')
 def index():
-    return render_template('index.html')
+    # Redirigir a dashboard en lugar de mostrar index.html
+    return redirect(url_for('dashboard'))
 
+# Agrega una nueva ruta para crear cotizaciones
+@app.route('/nueva-cotizacion')
+def nueva_cotizacion():
+    return render_template('index.html')
 @app.route('/generar-cotizacion', methods=['POST'])
 def generar_cotizacion():
     try:
@@ -226,27 +231,41 @@ def generar_cotizacion():
             'fecha': datetime.now().strftime('%d/%m/%Y')
         }
         
-        # Verificar si el cliente ya existe
-        cliente_existente = Cliente.query.filter_by(
-            email=datos_cliente['email'],
-            telefono=datos_cliente['telefono']
-        ).first()
+        # Verificar si se especificó un ID de cliente existente
+        cliente_id = request.form.get('cliente_id')
         
-        if cliente_existente:
-            cliente = cliente_existente
-            print(f"✅ Cliente existente encontrado: {cliente.id} - {cliente.nombre} {cliente.apellido}")
+        if cliente_id and cliente_id.strip():
+            # Si se proporciona un ID de cliente, buscar el cliente existente
+            cliente = Cliente.query.get(int(cliente_id))
+            if not cliente:
+                return jsonify({
+                    'success': False,
+                    'mensaje': 'El cliente seleccionado no existe'
+                }), 400
+            print(f"✅ Cliente existente encontrado por ID: {cliente.id} - {cliente.nombre} {cliente.apellido}")
         else:
-            # Crear nuevo cliente en la base de datos
-            cliente = Cliente(
-                nombre=datos_cliente['nombre'],
-                apellido=datos_cliente['apellido'],
-                telefono=datos_cliente['telefono'],
+            # Verificar si el cliente ya existe por email y teléfono
+            cliente_existente = Cliente.query.filter_by(
                 email=datos_cliente['email'],
-                direccion=datos_cliente['direccion']
-            )
-            db.session.add(cliente)
-            db.session.flush()  # Para obtener el ID generado
-            print(f"✅ Nuevo cliente creado con ID temporal: {cliente.id}")
+                telefono=datos_cliente['telefono']
+            ).first()
+            
+            if cliente_existente:
+                cliente = cliente_existente
+                print(f"✅ Cliente existente encontrado: {cliente.id} - {cliente.nombre} {cliente.apellido}")
+            else:
+                # Crear nuevo cliente en la base de datos
+                cliente = Cliente(
+                    nombre=datos_cliente['nombre'],
+                    apellido=datos_cliente['apellido'],
+                    telefono=datos_cliente['telefono'],
+                    email=datos_cliente['email'],
+                    direccion=datos_cliente['direccion']
+                )
+                db.session.add(cliente)
+                db.session.flush()  # Para obtener el ID generado
+                print(f"✅ Nuevo cliente creado con ID temporal: {cliente.id}")
+        
         
         # Datos del proyecto
         datos_proyecto = {
@@ -374,7 +393,53 @@ def generar_cotizacion():
             'success': False,
             'mensaje': f'Error al generar la cotización: {str(e)}'
         }), 500
-
+# Agregar esta ruta API para buscar clientes
+@app.route('/api/buscar-clientes')
+def buscar_clientes():
+    try:
+        # Obtener término de búsqueda
+        busqueda = request.args.get('q', '')
+        
+        if len(busqueda) < 3:
+            return jsonify({
+                'success': False,
+                'mensaje': 'Ingrese al menos 3 caracteres para buscar'
+            })
+        
+        # Consultar clientes que coincidan con el término de búsqueda
+        clientes = Cliente.query.filter(
+            or_(
+                Cliente.nombre.like(f'%{busqueda}%'),
+                Cliente.apellido.like(f'%{busqueda}%'),
+                Cliente.telefono.like(f'%{busqueda}%'),
+                Cliente.email.like(f'%{busqueda}%')
+            )
+        ).limit(10).all()
+        
+        # Convertir a formato JSON
+        clientes_data = []
+        for cliente in clientes:
+            clientes_data.append({
+                'id': cliente.id,
+                'nombre': cliente.nombre,
+                'apellido': cliente.apellido,
+                'telefono': cliente.telefono,
+                'email': cliente.email,
+                'direccion': cliente.direccion
+            })
+        
+        return jsonify({
+            'success': True,
+            'clientes': clientes_data
+        })
+        
+    except Exception as e:
+        print(f"Error al buscar clientes: {str(e)}")
+        return jsonify({
+            'success': False,
+            'mensaje': f'Error al buscar clientes: {str(e)}'
+        }), 500
+    
 @app.route('/descargar-cotizacion/<numero_cotizacion>')
 def descargar_cotizacion(numero_cotizacion):
     pdf_path = f"{app.config['COTIZACIONES_FOLDER']}/{numero_cotizacion}.pdf"
