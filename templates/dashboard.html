@@ -1,0 +1,1032 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+        height: 100%;
+    }
+    .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .stat-card {
+        border-left: 4px solid #0d6efd;
+        background-color: #f8f9fa;
+    }
+    .stat-icon {
+        font-size: 2rem;
+        opacity: 0.2;
+        position: absolute;
+        right: 20px;
+        top: 10px;
+    }
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+    }
+    .kpi-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+    }
+    .dashboard-section {
+        margin-bottom: 25px;
+    }
+    .bg-pendiente {
+        background-color: #ffeeba !important;
+    }
+    .bg-aprobada {
+        background-color: #c3e6cb !important;
+    }
+    .bg-rechazada {
+        background-color: #f5c6cb !important;
+    }
+    .dashboard-title {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 10px;
+        margin-bottom: 20px;
+    }
+    .fecha-filtro {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .quick-stats {
+        margin-bottom: 20px;
+    }
+    .dropdown-range {
+        float: right;
+    }
+    .finance-card {
+        border-left: 4px solid #198754;
+    }
+    .report-item {
+        transition: all 0.2s ease;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+        margin-bottom: 10px;
+    }
+    .report-item:hover {
+        background-color: #e9ecef;
+        transform: translateY(-2px);
+    }
+    .report-icon {
+        font-size: 1.5rem;
+        margin-right: 10px;
+        color: #0d6efd;
+    }
+    .finance-metrics {
+        padding: 15px;
+        background-color: #f1f8ff;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+    .loader {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 200px;
+    }
+    .skeleton-loading {
+        position: relative;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .skeleton-loading::after {
+        content: "";
+        display: block;
+        position: absolute;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        transform: translateX(-100%);
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+        animation: loading 1.5s infinite;
+    }
+    @keyframes loading {
+        100% {
+            transform: translateX(100%);
+        }
+    }
+    @media (max-width: 767px) {
+        .chart-container {
+            height: 250px;
+        }
+        .dropdown-range {
+            float: none;
+            margin-bottom: 10px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="card-title mb-0">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard de Remodelaciones WM
+                    </h2>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="dropdownRango" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-calendar"></i> Este mes
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="dropdownRango">
+                            <li><a class="dropdown-item active" href="#" data-value="month">Este mes</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="quarter">Este trimestre</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="year">Este año</a></li>
+                            <li><a class="dropdown-item" href="#" data-value="all">Todo el tiempo</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="card-text text-muted">Vista general del rendimiento del negocio</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Indicadores principales (KPIs) -->
+<div class="row quick-stats" id="kpi-cards">
+    <!-- Las tarjetas KPI se cargarán dinámicamente aquí -->
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card skeleton-loading">
+            <div class="card-body" style="height: 120px;">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card skeleton-loading">
+            <div class="card-body" style="height: 120px;">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card skeleton-loading">
+            <div class="card-body" style="height: 120px;">
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="card stat-card skeleton-loading">
+            <div class="card-body" style="height: 120px;">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row dashboard-section">
+    <!-- Gráfico de tendencias -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-line"></i> Tendencia de Cotizaciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="tendencia-chart-container">
+                    <div class="loader">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                    <canvas id="cotizacionesChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Distribución por estado -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Estado de Cotizaciones</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container" id="estado-chart-container">
+                    <div class="loader">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
+                    <canvas id="estadoCotizacionesChart"></canvas>
+                </div>
+                <div class="text-center mt-2" id="estado-labels">
+                    <!-- Etiquetas de estado se cargarán dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NUEVO: Sección de Finanzas -->
+<div class="row dashboard-section">
+    <div class="col-12 mb-4">
+        <h2 class="dashboard-title">
+            <i class="fas fa-chart-bar"></i> Finanzas y KPIs
+        </h2>
+    </div>
+    
+    <!-- Métricas financieras -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-money-bill-wave"></i> Métricas Financieras</h5>
+                <div>
+                    <button class="btn btn-sm btn-light" id="exportarMetricas">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button class="btn btn-sm btn-light ms-2" id="exportarMetricasPDF">
+                        <i class="fas fa-file-pdf"></i> PDF
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="finance-metrics" id="metricas-container">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card finance-card">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-1">Margen de beneficio</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h3 class="me-2" id="margen-beneficio">--</h3>
+                                        <small id="margen-trend" class="text-success">
+                                            <i class="fas fa-arrow-up"></i> <span>0%</span>
+                                        </small>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar bg-success" id="margen-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card finance-card">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-1">Tasa de conversión</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h3 class="me-2" id="tasa-conversion">--</h3>
+                                        <small id="conversion-trend" class="text-success">
+                                            <i class="fas fa-arrow-up"></i> <span>0%</span>
+                                        </small>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar bg-primary" id="conversion-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card finance-card">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-1">Costo promedio por proyecto</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h3 class="me-2" id="costo-promedio">--</h3>
+                                        <small id="costo-trend" class="text-danger">
+                                            <i class="fas fa-arrow-up"></i> <span>0%</span>
+                                        </small>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar bg-info" id="costo-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card finance-card">
+                                <div class="card-body">
+                                    <h6 class="text-muted mb-1">ROI de Marketing</h6>
+                                    <div class="d-flex align-items-center">
+                                        <h3 class="me-2" id="roi-marketing">--</h3>
+                                        <small id="roi-trend" class="text-success">
+                                            <i class="fas fa-arrow-up"></i> <span>0%</span>
+                                        </small>
+                                    </div>
+                                    <div class="progress mt-2" style="height: 5px;">
+                                        <div class="progress-bar bg-warning" id="roi-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-3">
+                        <div class="card-body p-0">
+                            <div class="chart-container" style="height: 250px;">
+                                <canvas id="financial-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reportes disponibles -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> Reportes Financieros</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-3">Reportes disponibles para descarga:</p>
+                
+                <div class="report-item d-flex align-items-center">
+                    <i class="fas fa-file-excel report-icon"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Balance General</h6>
+                        <small class="text-muted">Resumen de activos, pasivos y capital</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateReport('balance', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="generateReport('balance', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="report-item d-flex align-items-center">
+                    <i class="fas fa-file-excel report-icon"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Estado de Resultados</h6>
+                        <small class="text-muted">Ingresos, gastos y beneficios</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateReport('resultados', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="generateReport('resultados', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="report-item d-flex align-items-center">
+                    <i class="fas fa-file-excel report-icon"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Flujo de Efectivo</h6>
+                        <small class="text-muted">Entradas y salidas de efectivo</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateReport('flujo', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="generateReport('flujo', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="report-item d-flex align-items-center">
+                    <i class="fas fa-file-excel report-icon"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Análisis de Rentabilidad</h6>
+                        <small class="text-muted">ROI, margen por proyecto y cliente</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateReport('rentabilidad', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="generateReport('rentabilidad', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="report-item d-flex align-items-center">
+                    <i class="fas fa-file-excel report-icon"></i>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-0">Costos por Categoría</h6>
+                        <small class="text-muted">Distribución de gastos por categoría</small>
+                    </div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-sm btn-outline-primary" onclick="generateReport('costos', 'excel')">
+                            <i class="fas fa-file-excel"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="generateReport('costos', 'pdf')">
+                            <i class="fas fa-file-pdf"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <button class="btn btn-outline-success" id="generarReportesCompletos">
+                        <i class="fas fa-download"></i> Generar todos los reportes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js para los gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables para los gráficos
+    let cotizacionesChart;
+    let estadosChart;
+    let financialChart;
+    let currentRange = 'month';
+    
+    // Cargar datos
+    cargarDatosDashboard();
+    
+    // Configurar selector de rango
+    document.querySelectorAll('#dropdownRango + .dropdown-menu .dropdown-item').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Actualizar texto del botón
+            const rangoTexto = this.textContent.trim();
+            document.getElementById('dropdownRango').innerHTML = `<i class="fas fa-calendar"></i> ${rangoTexto}`;
+            
+            // Remover clase active de todos los items
+            document.querySelectorAll('#dropdownRango + .dropdown-menu .dropdown-item').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Agregar clase active al item seleccionado
+            this.classList.add('active');
+            
+            // Actualizar rango y recargar datos
+            currentRange = this.dataset.value;
+            cargarDatosDashboard(currentRange);
+        });
+    });
+    
+    // Función para cargar datos del API
+    function cargarDatosDashboard(range = 'month') {
+        // Mostrar indicadores de carga
+        document.querySelectorAll('.loader').forEach(loader => {
+            loader.style.display = 'flex';
+        });
+        
+        // Ocultar canvas de gráficos
+        document.getElementById('cotizacionesChart').style.display = 'none';
+        document.getElementById('estadoCotizacionesChart').style.display = 'none';
+        
+        // Obtener datos del API
+        fetch(`/api/dashboard-data?range=${range}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    actualizarKPIs(data.stats);
+                    actualizarGraficos(data.charts);
+                    actualizarMetricasFinancieras(data.finances || {});
+                } else {
+                    mostrarError(data.error || 'Error al cargar los datos');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarError('Error de conexión al servidor');
+            })
+            .finally(() => {
+                // Ocultar indicadores de carga
+                document.querySelectorAll('.loader').forEach(loader => {
+                    loader.style.display = 'none';
+                });
+                
+                // Mostrar canvas de gráficos
+                document.getElementById('cotizacionesChart').style.display = 'block';
+                document.getElementById('estadoCotizacionesChart').style.display = 'block';
+            });
+    }
+    
+    // Función para actualizar los KPIs
+    function actualizarKPIs(stats) {
+        const kpiContainer = document.getElementById('kpi-cards');
+        
+        // Limpiar contenedor
+        kpiContainer.innerHTML = '';
+        
+        // Tarjeta de clientes
+        kpiContainer.innerHTML += `
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon text-primary">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="kpi-value text-primary">${stats.clientes.total}</div>
+                            <div class="kpi-label">Clientes totales</div>
+                            <div class="mt-2 small">
+                                <span class="text-success"><i class="fas fa-arrow-up"></i> ${stats.clientes.nuevos_mes}</span>
+                                <span class="text-muted">este mes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Tarjeta de cotizaciones
+        kpiContainer.innerHTML += `
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon text-info">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="kpi-value text-info">${stats.cotizaciones.mes}</div>
+                            <div class="kpi-label">Cotizaciones del mes</div>
+                            <div class="mt-2 small">
+                                <span class="text-success"><i class="fas fa-check"></i> ${stats.cotizaciones.aprobadas}</span>
+                                <span class="text-muted">aprobadas</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Tarjeta de facturas
+        kpiContainer.innerHTML += `
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon text-success">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="kpi-value text-success">${stats.facturas.mes}</div>
+                            <div class="kpi-label">Facturas del mes</div>
+                            <div class="mt-2 small">
+                                <span class="text-warning"><i class="fas fa-clock"></i> ${stats.facturas.pendientes}</span>
+                                <span class="text-muted">pendientes</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Tarjeta de ingresos
+        kpiContainer.innerHTML += `
+            <div class="col-md-3 mb-4">
+                <div class="card stat-card">
+                    <div class="card-body">
+                        <div class="stat-icon text-danger">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="d-flex flex-column">
+                            <div class="kpi-value text-danger">L. ${formatMoney(stats.ingresos.mes)}</div>
+                            <div class="kpi-label">Ingresos del mes</div>
+                            <div class="mt-2 small">
+                                <span class="text-muted">Total: L. ${formatMoney(stats.ingresos.total)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Función para actualizar las métricas financieras
+    function actualizarMetricasFinancieras(finances) {
+        // Datos de ejemplo si no hay datos reales
+        const datos = finances.kpis || {
+            margen: {
+                valor: 32.5,
+                tendencia: 2.3
+            },
+            conversion: {
+                valor: 68.2,
+                tendencia: 5.7
+            },
+            costo_promedio: {
+                valor: 15600,
+                tendencia: 3.1
+            },
+            roi: {
+                valor: 215,
+                tendencia: 7.5
+            }
+        };
+        
+        // Actualizar KPIs financieros
+        document.getElementById('margen-beneficio').textContent = datos.margen.valor + '%';
+        document.getElementById('margen-bar').style.width = datos.margen.valor + '%';
+        document.getElementById('margen-bar').setAttribute('aria-valuenow', datos.margen.valor);
+        
+        if (datos.margen.tendencia > 0) {
+            document.getElementById('margen-trend').className = 'text-success';
+            document.getElementById('margen-trend').innerHTML = `<i class="fas fa-arrow-up"></i> ${datos.margen.tendencia}%`;
+        } else {
+            document.getElementById('margen-trend').className = 'text-danger';
+            document.getElementById('margen-trend').innerHTML = `<i class="fas fa-arrow-down"></i> ${Math.abs(datos.margen.tendencia)}%`;
+        }
+        
+        document.getElementById('tasa-conversion').textContent = datos.conversion.valor + '%';
+        document.getElementById('conversion-bar').style.width = datos.conversion.valor + '%';
+        document.getElementById('conversion-bar').setAttribute('aria-valuenow', datos.conversion.valor);
+        
+        if (datos.conversion.tendencia > 0) {
+            document.getElementById('conversion-trend').className = 'text-success';
+            document.getElementById('conversion-trend').innerHTML = `<i class="fas fa-arrow-up"></i> ${datos.conversion.tendencia}%`;
+        } else {
+            document.getElementById('conversion-trend').className = 'text-danger';
+            document.getElementById('conversion-trend').innerHTML = `<i class="fas fa-arrow-down"></i> ${Math.abs(datos.conversion.tendencia)}%`;
+        }
+        
+        document.getElementById('costo-promedio').textContent = 'L. ' + formatMoney(datos.costo_promedio.valor);
+        // Para el costo, una tendencia hacia arriba es negativa
+        if (datos.costo_promedio.tendencia > 0) {
+            document.getElementById('costo-trend').className = 'text-danger';
+            document.getElementById('costo-trend').innerHTML = `<i class="fas fa-arrow-up"></i> ${datos.costo_promedio.tendencia}%`;
+        } else {
+            document.getElementById('costo-trend').className = 'text-success';
+            document.getElementById('costo-trend').innerHTML = `<i class="fas fa-arrow-down"></i> ${Math.abs(datos.costo_promedio.tendencia)}%`;
+        }
+        document.getElementById('costo-bar').style.width = Math.min(datos.costo_promedio.valor / 200, 100) + '%';
+        
+        document.getElementById('roi-marketing').textContent = datos.roi.valor + '%';
+        document.getElementById('roi-bar').style.width = Math.min(datos.roi.valor / 3, 100) + '%';
+        document.getElementById('roi-bar').setAttribute('aria-valuenow', Math.min(datos.roi.valor / 3, 100));
+        
+        if (datos.roi.tendencia > 0) {
+            document.getElementById('roi-trend').className = 'text-success';
+            document.getElementById('roi-trend').innerHTML = `<i class="fas fa-arrow-up"></i> ${datos.roi.tendencia}%`;
+        } else {
+            document.getElementById('roi-trend').className = 'text-danger';
+            document.getElementById('roi-trend').innerHTML = `<i class="fas fa-arrow-down"></i> ${Math.abs(datos.roi.tendencia)}%`;
+        }
+        
+        // Actualizar gráfico financiero
+        actualizarGraficoFinanciero(finances.chart || {
+            labels: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+            ingresos: [25000, 29500, 32000, 30000, 38000, 42000],
+            gastos: [18000, 20500, 22000, 21000, 25000, 28000],
+            beneficios: [7000, 9000, 10000, 9000, 13000, 14000]
+        });
+    }
+    
+    // Función para actualizar gráfico financiero
+    function actualizarGraficoFinanciero(datos) {
+        const ctx = document.getElementById('financial-chart').getContext('2d');
+        
+        // Destruir gráfico anterior si existe
+        if (financialChart) {
+            financialChart.destroy();
+        }
+        
+        // Crear nuevo gráfico
+        financialChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: datos.labels,
+                datasets: [
+                    {
+                        label: 'Ingresos',
+                        data: datos.ingresos,
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Gastos',
+                        data: datos.gastos,
+                        backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Beneficios',
+                        data: datos.beneficios,
+                        type: 'line',
+                        backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                        borderColor: 'rgba(255, 193, 7, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(255, 193, 7, 1)',
+                        pointRadius: 4,
+                        fill: false,
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return 'L. ' + value.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += 'L. ' + context.parsed.y.toLocaleString();
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función para actualizar los gráficos
+    function actualizarGraficos(charts) {
+        // Actualizar gráfico de tendencias
+        actualizarGraficoTendencias(charts.tendencia);
+        
+        // Actualizar gráfico de estados
+        actualizarGraficoEstados(charts.estados);
+        
+        // Actualizar etiquetas de estados
+        actualizarEtiquetasEstados(charts.estados);
+    }
+    
+    // Función para actualizar gráfico de tendencias
+    function actualizarGraficoTendencias(datos) {
+        const ctx = document.getElementById('cotizacionesChart').getContext('2d');
+        
+        // Destruir gráfico anterior si existe
+        if (cotizacionesChart) {
+            cotizacionesChart.destroy();
+        }
+        
+        // Crear nuevo gráfico
+        cotizacionesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: datos.meses,
+                datasets: [{
+                    label: 'Total Cotizaciones',
+                    data: datos.cotizaciones,
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderColor: 'rgba(13, 110, 253, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }, {
+                    label: 'Aprobadas',
+                    data: datos.aprobadas,
+                    backgroundColor: 'rgba(25, 135, 84, 0)',
+                    borderColor: 'rgba(25, 135, 84, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                }, {
+                    label: 'Facturadas',
+                    data: datos.facturadas,
+                    backgroundColor: 'rgba(220, 53, 69, 0)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y;
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función para actualizar gráfico de estados
+    function actualizarGraficoEstados(datos) {
+        const ctx = document.getElementById('estadoCotizacionesChart').getContext('2d');
+        
+        // Destruir gráfico anterior si existe
+        if (estadosChart) {
+            estadosChart.destroy();
+        }
+        
+        // Crear nuevo gráfico
+        estadosChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Pendientes', 'Aprobadas', 'Rechazadas'],
+                datasets: [{
+                    data: [
+                        datos.Pendiente || 0,
+                        datos.Aprobada || 0,
+                        datos.Rechazada || 0
+                    ],
+                    backgroundColor: [
+                        'rgba(255, 193, 7, 0.8)',
+                        'rgba(25, 135, 84, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 193, 7, 1)',
+                        'rgba(25, 135, 84, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    }
+    
+    // Función para actualizar etiquetas de estados
+    function actualizarEtiquetasEstados(datos) {
+        const container = document.getElementById('estado-labels');
+        
+        // Limpiar contenedor
+        container.innerHTML = '';
+        
+        // Agregar etiquetas
+        container.innerHTML = `
+            <div class="d-inline-block mx-2">
+                <span class="badge bg-warning">&nbsp;</span> Pendientes: ${datos.Pendiente || 0}
+            </div>
+            <div class="d-inline-block mx-2">
+                <span class="badge bg-success">&nbsp;</span> Aprobadas: ${datos.Aprobada || 0}
+            </div>
+            <div class="d-inline-block mx-2">
+                <span class="badge bg-danger">&nbsp;</span> Rechazadas: ${datos.Rechazada || 0}
+            </div>
+        `;
+    }
+    
+    // Función para formato de moneda
+    function formatMoney(amount) {
+        return parseFloat(amount).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+    
+    // Función para generar reportes
+    window.generateReport = function(type, format) {
+        // Mostrar notificación de proceso
+        mostrarNotificacion(`Generando reporte de ${getTipoReporte(type)} en formato ${format.toUpperCase()}...`, 'info');
+        
+        // Redirigir a la API de reportes
+        window.location.href = `/api/finance-report/${type}?format=${format}&range=${currentRange}`;
+    };
+    
+    // Función para obtener nombre amigable del tipo de reporte
+    function getTipoReporte(type) {
+        const tipos = {
+            'balance': 'Balance General',
+            'resultados': 'Estado de Resultados',
+            'flujo': 'Flujo de Efectivo',
+            'rentabilidad': 'Análisis de Rentabilidad',
+            'costos': 'Costos por Categoría'
+        };
+        
+        return tipos[type] || type;
+    }
+    
+    // Configurar botón para exportar métricas
+    document.getElementById('exportarMetricas').addEventListener('click', function() {
+        window.location.href = `/api/finance-metrics?format=excel&range=${currentRange}`;
+        mostrarNotificacion('Exportando métricas a Excel...', 'info');
+    });
+    
+    document.getElementById('exportarMetricasPDF').addEventListener('click', function() {
+        window.location.href = `/api/finance-metrics?format=pdf&range=${currentRange}`;
+        mostrarNotificacion('Exportando métricas a PDF...', 'info');
+    });
+    
+    // Configurar botón para generar todos los reportes
+    document.getElementById('generarReportesCompletos').addEventListener('click', function() {
+        window.location.href = `/api/finance-reports-all?range=${currentRange}`;
+        mostrarNotificacion('Generando paquete completo de reportes financieros...', 'info');
+    });
+    
+    // Función para mostrar errores
+    function mostrarError(mensaje) {
+        console.error('Error:', mensaje);
+        
+        // Crear toast de error
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-danger border-0';
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-exclamation-circle"></i> ${mensaje}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Agregar al documento
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.appendChild(toast);
+        document.body.appendChild(toastContainer);
+        
+        // Mostrar notificación
+        const bsToast = new bootstrap.Toast(toast, {
+            autohide: true,
+            delay: 5000
+        });
+        bsToast.show();
+        
+        // Eliminar del DOM después de ocultarse
+        toast.addEventListener('hidden.bs.toast', function() {
+            toastContainer.remove();
+        });
+    }
+    
+    // Función para mostrar notificaciones
+    function mostrarNotificacion(mensaje, tipo = 'success') {
+        // Crear toast
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${tipo} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    ${mensaje}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Agregar al documento
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.appendChild(toast);
+        document.body.appendChild(toastContainer);
+        
+        // Mostrar notificación
+        const bsToast = new bootstrap.Toast(toast, {
+            autohide: true,
+            delay: 3000
+        });
+        bsToast.show();
+        
+        // Eliminar del DOM después de ocultarse
+        toast.addEventListener('hidden.bs.toast', function() {
+            toastContainer.remove();
+        });
+    }
+});
+</script>
+{% endblock %}

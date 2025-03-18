@@ -1885,6 +1885,83 @@ def reporte_costos_proyecto(cotizacion_id):
             'success': False,
             'mensaje': f'Error al generar reporte: {str(e)}'
         }), 500
-    
+
+# Ruta para la página del dashboard
+@app.route('/dashboard')
+def dashboard():
+    """
+    Página principal del dashboard
+    """
+    return render_template('dashboard.html')
+
+# Ruta para la API del dashboard
+@app.route('/api/dashboard-data')
+def dashboard_data():
+    """
+    API que devuelve los datos para el dashboard en formato JSON
+    """
+    try:
+        # Obtener fecha actual y primer día del mes
+        fecha_actual = datetime.now()
+        primer_dia_mes = fecha_actual.replace(day=1, hour=0, minute=0, second=0)
+        
+        # Crear respuesta JSON simplificada
+        response_data = {
+            'success': True,
+            'stats': {
+                'clientes': {
+                    'total': Cliente.query.count(),
+                    'nuevos_mes': Cliente.query.filter(Cliente.fecha_registro >= primer_dia_mes).count()
+                },
+                'cotizaciones': {
+                    'total': Cotizacion.query.count(),
+                    'mes': Cotizacion.query.filter(Cotizacion.fecha_creacion >= primer_dia_mes).count(),
+                    'pendientes': Cotizacion.query.filter_by(estado='Pendiente').count(),
+                    'aprobadas': Cotizacion.query.filter_by(estado='Aprobada').count(),
+                    'rechazadas': Cotizacion.query.filter_by(estado='Rechazada').count()
+                },
+                'facturas': {
+                    'total': Factura.query.count(),
+                    'mes': Factura.query.filter(Factura.fecha_emision >= primer_dia_mes).count(),
+                    'pendientes': Factura.query.filter_by(estado_pago='Pendiente').count(),
+                    'pagadas': Factura.query.filter_by(estado_pago='Pagado').count()
+                },
+                'ingresos': {
+                    'total': float(db.session.query(func.sum(Factura.total)).filter(Factura.estado_pago == 'Pagado').scalar() or 0),
+                    'mes': float(db.session.query(func.sum(Factura.total))
+                                 .filter(Factura.estado_pago == 'Pagado',
+                                        Factura.fecha_emision >= primer_dia_mes).scalar() or 0)
+                }
+            },
+            'charts': {
+                'tendencia': {
+                    'meses': ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio'],
+                    'cotizaciones': [5, 8, 12, 10, 15, 20],
+                    'aprobadas': [3, 5, 8, 7, 10, 15],
+                    'facturadas': [2, 4, 7, 6, 8, 12]
+                },
+                'estados': {
+                    'Pendiente': Cotizacion.query.filter_by(estado='Pendiente').count(),
+                    'Aprobada': Cotizacion.query.filter_by(estado='Aprobada').count(),
+                    'Rechazada': Cotizacion.query.filter_by(estado='Rechazada').count()
+                }
+            },
+            'tables': {
+                'cotizaciones_recientes': [],
+                'facturas_recientes': [],
+                'top_clientes': [],
+                'top_proyectos': []
+            }
+        }
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"❌ ERROR en API Dashboard: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 if __name__ == '__main__':
     app.run(debug=True)
