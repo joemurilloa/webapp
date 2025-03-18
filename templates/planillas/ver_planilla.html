@@ -1,0 +1,456 @@
+{% extends 'base.html' %}
+
+{% block title %}Planilla {{ planilla.numero_planilla }} - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .planilla-header {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .info-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-section h4 {
+        border-bottom: 2px solid #0d6efd;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .badge-estado {
+        font-size: 100%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .actions-bar {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+    }
+    
+    .table-empleados th, .table-empleados td {
+        vertical-align: middle;
+    }
+    
+    .table-empleados tbody tr:hover {
+        background-color: rgba(0,123,255,0.05);
+    }
+    
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-full-width {
+            width: 100% !important;
+        }
+        
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 100%;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3 no-print">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('planillas') }}">Planillas</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('lista_planillas') }}">Historial</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Planilla {{ planilla.numero_planilla }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Cabecera de planilla -->
+<div class="planilla-header">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h2 class="mb-2">Planilla: {{ planilla.numero_planilla }}</h2>
+            <p class="mb-1">Tipo: {{ planilla.tipo }}</p>
+            <p class="mb-1">Período: {{ planilla.fecha_inicio.strftime('%d/%m/%Y') }} - {{ planilla.fecha_fin.strftime('%d/%m/%Y') }}</p>
+            <p class="mb-1">Fecha de Pago: {{ planilla.fecha_pago.strftime('%d/%m/%Y') }}</p>
+            <p class="mb-0">Estado: 
+                {% if planilla.estado == 'Borrador' %}
+                    <span class="badge bg-secondary badge-estado">Borrador</span>
+                {% elif planilla.estado == 'Aprobada' %}
+                    <span class="badge bg-info badge-estado">Aprobada</span>
+                {% elif planilla.estado == 'Pagada' %}
+                    <span class="badge bg-success badge-estado">Pagada</span>
+                {% elif planilla.estado == 'Anulada' %}
+                    <span class="badge bg-danger badge-estado">Anulada</span>
+                {% endif %}
+            </p>
+            {% if planilla.notas %}
+                <p class="mt-2"><em>Notas: {{ planilla.notas }}</em></p>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0 no-print">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimir
+            </button>
+            
+            <!-- Botones de acciones según el estado de la planilla -->
+            {% if planilla.estado == 'Borrador' %}
+                <button type="button" class="btn btn-success btn-aprobar-planilla" 
+                        data-id="{{ planilla.id }}" 
+                        data-numero="{{ planilla.numero_planilla }}">
+                    <i class="fas fa-check"></i> Aprobar
+                </button>
+                <button type="button" class="btn btn-danger btn-eliminar" 
+                        data-id="{{ planilla.id }}" 
+                        data-numero="{{ planilla.numero_planilla }}">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            {% elif planilla.estado == 'Aprobada' %}
+                <button type="button" class="btn btn-success btn-marcar-pagada" 
+                        data-id="{{ planilla.id }}" 
+                        data-numero="{{ planilla.numero_planilla }}">
+                    <i class="fas fa-money-bill-wave"></i> Marcar como Pagada
+                </button>
+                <button type="button" class="btn btn-warning btn-anular-planilla" 
+                        data-id="{{ planilla.id }}" 
+                        data-numero="{{ planilla.numero_planilla }}">
+                    <i class="fas fa-ban"></i> Anular
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de la planilla -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-calculator"></i> Resumen</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 text-center mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="text-primary mb-0">{{ detalles|length }}</h3>
+                        <p class="text-muted mb-0">Empleados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="text-primary mb-0">L. {{ planilla.total_sueldos|round(2) }}</h3>
+                        <p class="text-muted mb-0">Total Sueldos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="text-primary mb-0">L. {{ planilla.total_deducciones|round(2) }}</h3>
+                        <p class="text-muted mb-0">Total Deducciones</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 text-center mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h3 class="text-success mb-0">L. {{ planilla.total_neto|round(2) }}</h3>
+                        <p class="text-muted mb-0">Total Neto</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detalles de empleados -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-users"></i> Detalle por Empleado</h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 table-empleados">
+                <thead class="table-light">
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Puesto</th>
+                        <th>Días Trab.</th>
+                        <th class="text-end">Sueldo Base</th>
+                        <th class="text-end">Ingresos</th>
+                        <th class="text-end">Deducciones</th>
+                        <th class="text-end">Neto a Pagar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detalle, empleado in detalles %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('empleado_detalles', empleado_id=empleado.id) }}" class="no-print">
+                                    {{ empleado.nombre }} {{ empleado.apellido }}
+                                </a>
+                                <span class="d-none d-print-block">{{ empleado.nombre }} {{ empleado.apellido }}</span>
+                            </td>
+                            <td>{{ empleado.puesto }}</td>
+                            <td>{{ detalle.dias_trabajados }}</td>
+                            <td class="text-end">L. {{ detalle.sueldo_base|round(2) }}</td>
+                            <td class="text-end">
+                                L. {{ detalle.total_ingresos|round(2) }}
+                                <button type="button" class="btn btn-sm btn-light no-print" data-bs-toggle="tooltip" data-bs-html="true" 
+                                        title="Sueldo: L. {{ (detalle.sueldo_base * detalle.dias_trabajados / 15)|round(2) }}<br>
+                                               H. Extra: L. {{ detalle.horas_extra_monto|round(2) }}<br>
+                                               Bonos: L. {{ detalle.bonificacion|round(2) }}<br>
+                                               Comisiones: L. {{ detalle.comisiones|round(2) }}<br>
+                                               Otros: L. {{ detalle.otros_ingresos|round(2) }}">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </td>
+                            <td class="text-end">
+                                L. {{ detalle.total_deducciones|round(2) }}
+                                <button type="button" class="btn btn-sm btn-light no-print" data-bs-toggle="tooltip" data-bs-html="true" 
+                                        title="IHSS: L. {{ detalle.ihss|round(2) }}<br>
+                                               RAP: L. {{ detalle.rap|round(2) }}<br>
+                                               ISR: L. {{ detalle.isr|round(2) }}<br>
+                                               Anticipo: L. {{ detalle.anticipo|round(2) }}<br>
+                                               Préstamos: L. {{ detalle.prestamos|round(2) }}<br>
+                                               Otras: L. {{ detalle.otras_deducciones|round(2) }}">
+                                    <i class="fas fa-info-circle"></i>
+                                </button>
+                            </td>
+                            <td class="text-end fw-bold">L. {{ detalle.sueldo_neto|round(2) }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="table-light">
+                    <tr class="fw-bold">
+                        <td colspan="4" class="text-end">TOTALES:</td>
+                        <td class="text-end">L. {{ planilla.total_sueldos + planilla.total_bonificaciones|round(2) }}</td>
+                        <td class="text-end">L. {{ planilla.total_deducciones|round(2) }}</td>
+                        <td class="text-end">L. {{ planilla.total_neto|round(2) }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pie para impresión -->
+<div class="d-none d-print-block mt-5">
+    <div class="row">
+        <div class="col-4 text-center">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>Elaborado por</p>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>Revisado por</p>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div style="border-top: 1px solid #000; padding-top: 5px;">
+                <p>Aprobado por</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de acciones -->
+<div class="actions-bar text-center no-print">
+    <a href="{{ url_for('lista_planillas') }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Historial
+    </a>
+    <button type="button" class="btn btn-primary" onclick="window.print()">
+        <i class="fas fa-print"></i> Imprimir
+    </button>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar la planilla <strong id="numeroEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Cambiar Estado -->
+<div class="modal fade" id="cambiarEstadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-exchange-alt"></i> Cambiar Estado de Planilla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea cambiar el estado de la planilla <strong id="numeroCambiarEstado"></strong> a <strong id="nuevoEstado"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarCambiarEstado" class="btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar tooltips
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Modal de eliminación
+        const eliminarModal = new bootstrap.Modal(document.getElementById('eliminarModal'));
+        const cambiarEstadoModal = new bootstrap.Modal(document.getElementById('cambiarEstadoModal'));
+        let planillaIdAEliminar = null;
+        let planillaIdACambiarEstado = null;
+        let nuevoEstadoPlanilla = '';
+        
+        // Configurar botón para eliminar
+        const btnEliminar = document.querySelector('.btn-eliminar');
+        if (btnEliminar) {
+            btnEliminar.addEventListener('click', function() {
+                planillaIdAEliminar = this.dataset.id;
+                document.getElementById('numeroEliminar').textContent = this.dataset.numero;
+                eliminarModal.show();
+            });
+        }
+        
+        // Configurar botón para aprobar planilla
+        const btnAprobar = document.querySelector('.btn-aprobar-planilla');
+        if (btnAprobar) {
+            btnAprobar.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Aprobada';
+                nuevoEstadoPlanilla = 'Aprobada';
+                cambiarEstadoModal.show();
+            });
+        }
+        
+        // Configurar botón para marcar como pagada
+        const btnPagada = document.querySelector('.btn-marcar-pagada');
+        if (btnPagada) {
+            btnPagada.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Pagada';
+                nuevoEstadoPlanilla = 'Pagada';
+                cambiarEstadoModal.show();
+            });
+        }
+        
+        // Configurar botón para anular planilla
+        const btnAnular = document.querySelector('.btn-anular-planilla');
+        if (btnAnular) {
+            btnAnular.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Anulada';
+                nuevoEstadoPlanilla = 'Anulada';
+                cambiarEstadoModal.show();
+            });
+        }
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (planillaIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-planilla/${planillaIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarModal.hide();
+                    
+                    if (data.success) {
+                        // Redirigir al historial
+                        window.location.href = "{{ url_for('lista_planillas') }}";
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarModal.hide();
+                });
+            }
+        });
+        
+        // Confirmar cambio de estado
+        document.getElementById('btnConfirmarCambiarEstado').addEventListener('click', function() {
+            if (planillaIdACambiarEstado && nuevoEstadoPlanilla) {
+                // Realizar solicitud AJAX para cambiar estado
+                fetch(`/actualizar-estado-planilla/${planillaIdACambiarEstado}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        estado: nuevoEstadoPlanilla
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    cambiarEstadoModal.hide();
+                    
+                    if (data.success) {
+                        // Mostrar notificación de éxito
+                        mostrarNotificacion(data.mensaje, 'success');
+                        
+                        // Recargar la página después de un breve retraso
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    cambiarEstadoModal.hide();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

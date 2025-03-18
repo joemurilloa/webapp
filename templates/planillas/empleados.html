@@ -1,0 +1,547 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Empleados - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-empleados th, .table-empleados td {
+        vertical-align: middle;
+    }
+    
+    .badge-estado {
+        font-size: 85%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .filtro-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .actions-column {
+        width: 150px;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.765rem;
+    }
+    
+    .empleado-card {
+        transition: all 0.3s ease;
+    }
+    
+    .empleado-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-card {
+        border-left: 4px solid #0d6efd;
+        background-color: #f8f9fa;
+    }
+    
+    .foto-empleado {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 50%;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-users"></i> Gestión de Empleados
+                </h2>
+                <p class="text-center">Administre la información de los empleados y vea su historial.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-filter"></i> Filtros de Búsqueda</h4>
+    </div>
+    <div class="card-body">
+        <form id="filtroForm" method="GET" action="{{ url_for('empleados') }}">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="filtroNombre" class="form-label">Nombre o Apellido</label>
+                    <input type="text" class="form-control" id="filtroNombre" name="nombre" placeholder="Buscar por nombre o apellido" value="{{ request.args.get('nombre', '') }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="filtroDepartamento" class="form-label">Departamento</label>
+                    <select class="form-select" id="filtroDepartamento" name="departamento">
+                        <option value="">Todos</option>
+                        {% for departamento in departamentos %}
+                            <option value="{{ departamento }}" {% if request.args.get('departamento') == departamento %}selected{% endif %}>{{ departamento }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filtroEstado" class="form-label">Estado</label>
+                    <select class="form-select" id="filtroEstado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="Activo" {% if request.args.get('estado') == 'Activo' %}selected{% endif %}>Activo</option>
+                        <option value="Inactivo" {% if request.args.get('estado') == 'Inactivo' %}selected{% endif %}>Inactivo</option>
+                        <option value="Suspendido" {% if request.args.get('estado') == 'Suspendido' %}selected{% endif %}>Suspendido</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Botón para Agregar Empleado -->
+<div class="text-end mb-3">
+    <button type="button" class="btn btn-success" id="btnNuevoEmpleado">
+        <i class="fas fa-plus"></i> Nuevo Empleado
+    </button>
+</div>
+
+<!-- Lista de Empleados -->
+<div class="row" id="listaEmpleados">
+    {% if empleados %}
+        {% for empleado in empleados %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card empleado-card h-100">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ empleado.nombre }} {{ empleado.apellido }}</h5>
+                        {% if empleado.estado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif empleado.estado == 'Inactivo' %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% elif empleado.estado == 'Suspendido' %}
+                            <span class="badge bg-warning text-dark">Suspendido</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-body text-center">
+                        {% if empleado.foto %}
+                            <img src="{{ url_for('static', filename=empleado.foto) }}" alt="Foto de {{ empleado.nombre }}" class="foto-empleado">
+                        {% else %}
+                            <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 100px; height: 100px;">
+                                <i class="fas fa-user fa-3x text-white"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <ul class="list-unstyled text-start mb-0">
+                            <li class="mb-2"><i class="fas fa-id-card text-primary me-2"></i> {{ empleado.identidad }}</li>
+                            <li class="mb-2"><i class="fas fa-briefcase text-primary me-2"></i> {{ empleado.puesto }}</li>
+                            <li class="mb-2"><i class="fas fa-building text-primary me-2"></i> {{ empleado.departamento }}</li>
+                            <li class="mb-2"><i class="fas fa-phone text-primary me-2"></i> {{ empleado.telefono }}</li>
+                            <li><i class="fas fa-calendar-alt text-primary me-2"></i> Desde: {{ empleado.fecha_contratacion.strftime('%d/%m/%Y') }}</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer bg-white border-top-0">
+                        <div class="btn-group w-100" role="group">
+                            <button type="button" class="btn btn-outline-primary btn-ver-empleado" data-id="{{ empleado.id }}">
+                                <i class="fas fa-eye"></i> Ver Detalles
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-editar-empleado" data-id="{{ empleado.id }}">
+                                <i class="fas fa-edit"></i> Editar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> No se encontraron empleados.
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal para Agregar/Editar Empleado -->
+<div class="modal fade" id="empleadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="empleadoModalTitle"><i class="fas fa-user"></i> Nuevo Empleado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="empleadoForm" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="codigo" class="form-label">Código de Empleado</label>
+                            <input type="text" class="form-control" id="codigo" name="codigo" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="identidad" class="form-label">Número de Identidad</label>
+                            <input type="text" class="form-control" id="identidad" name="identidad" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="apellido" class="form-label">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fecha_nacimiento" class="form-label">Fecha de Nacimiento</label>
+                            <input type="date" class="form-control" id="fecha_nacimiento" name="fecha_nacimiento" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="fecha_contratacion" class="form-label">Fecha de Contratación</label>
+                            <input type="date" class="form-control" id="fecha_contratacion" name="fecha_contratacion" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="puesto" class="form-label">Puesto</label>
+                            <input type="text" class="form-control" id="puesto" name="puesto" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="departamento" class="form-label">Departamento</label>
+                            <select class="form-select" id="departamento" name="departamento" required>
+                                <option value="" selected disabled>Seleccione...</option>
+                                <option value="Administración">Administración</option>
+                                <option value="Operaciones">Operaciones</option>
+                                <option value="Ventas">Ventas</option>
+                                <option value="Proyectos">Proyectos</option>
+                                <option value="Campo">Campo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="telefono" class="form-label">Teléfono</label>
+                            <input type="tel" class="form-control" id="telefono" name="telefono" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="sueldo_base" class="form-label">Sueldo Base</label>
+                            <div class="input-group">
+                                <span class="input-group-text">L.</span>
+                                <input type="number" class="form-control" id="sueldo_base" name="sueldo_base" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="estado" class="form-label">Estado</label>
+                            <select class="form-select" id="estado" name="estado">
+                                <option value="Activo" selected>Activo</option>
+                                <option value="Inactivo">Inactivo</option>
+                                <option value="Suspendido">Suspendido</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cuenta_bancaria" class="form-label">Cuenta Bancaria</label>
+                            <input type="text" class="form-control" id="cuenta_bancaria" name="cuenta_bancaria">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="banco" class="form-label">Banco</label>
+                            <input type="text" class="form-control" id="banco" name="banco">
+                        </div>
+                        <div class="col-12">
+                            <label for="direccion" class="form-label">Dirección</label>
+                            <textarea class="form-control" id="direccion" name="direccion" rows="2" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="notas" class="form-label">Notas Adicionales</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label for="foto" class="form-label">Foto</label>
+                            <input type="file" class="form-control" id="foto" name="foto" accept="image/*">
+                            <div id="previewFoto" class="mt-2 d-none">
+                                <img src="" alt="Vista previa" class="img-thumbnail" style="max-height: 150px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="empleadoId" name="empleado_id" value="">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Detalles del Empleado -->
+<div class="modal fade" id="detallesEmpleadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-user-circle"></i> Detalles del Empleado</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="detallesEmpleadoBody">
+                <!-- Contenido cargado por AJAX -->
+                <div class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p>Cargando información del empleado...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnEditarDesdeDetalles">
+                    <i class="fas fa-edit"></i> Editar Empleado
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarEmpleadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar al empleado <strong id="nombreEmpleadoEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer y también eliminará todo el historial asociado.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales
+        const empleadoModal = new bootstrap.Modal(document.getElementById('empleadoModal'));
+        const detallesEmpleadoModal = new bootstrap.Modal(document.getElementById('detallesEmpleadoModal'));
+        const eliminarEmpleadoModal = new bootstrap.Modal(document.getElementById('eliminarEmpleadoModal'));
+        let empleadoIdAEliminar = null;
+        
+        // Configurar botón de nuevo empleado
+        document.getElementById('btnNuevoEmpleado').addEventListener('click', function() {
+            // Limpiar formulario
+            document.getElementById('empleadoForm').reset();
+            document.getElementById('empleadoId').value = '';
+            document.getElementById('empleadoModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> Nuevo Empleado';
+            document.getElementById('previewFoto').classList.add('d-none');
+            
+            // Mostrar modal
+            empleadoModal.show();
+        });
+        
+        // Vista previa de foto
+        document.getElementById('foto').addEventListener('change', function() {
+            const preview = document.getElementById('previewFoto');
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.querySelector('img').src = e.target.result;
+                    preview.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.classList.add('d-none');
+            }
+        });
+        
+        // Configurar botones para ver detalles
+        document.querySelectorAll('.btn-ver-empleado').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const empleadoId = this.dataset.id;
+                cargarDetallesEmpleado(empleadoId);
+            });
+        });
+        
+        // Configurar botones para editar
+        document.querySelectorAll('.btn-editar-empleado').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const empleadoId = this.dataset.id;
+                cargarDatosEmpleado(empleadoId);
+            });
+        });
+        
+        // Configurar botón para editar desde detalles
+        document.getElementById('btnEditarDesdeDetalles').addEventListener('click', function() {
+            const empleadoId = this.dataset.id;
+            if (empleadoId) {
+                detallesEmpleadoModal.hide();
+                setTimeout(() => {
+                    cargarDatosEmpleado(empleadoId);
+                }, 500);
+            }
+        });
+        
+        // Manejar envío del formulario de empleado
+        document.getElementById('empleadoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const empleadoId = document.getElementById('empleadoId').value;
+            const url = empleadoId ? `/actualizar-empleado/${empleadoId}` : '/crear-empleado';
+            
+            // Enviar solicitud
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                empleadoModal.hide();
+                
+                if (data.success) {
+                    mostrarNotificacion(data.mensaje, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                empleadoModal.hide();
+            });
+        });
+        
+        // Función para cargar detalles del empleado
+        function cargarDetallesEmpleado(empleadoId) {
+            // Mostrar modal con spinner
+            detallesEmpleadoModal.show();
+            
+            // Cargar datos
+            fetch(`/empleado/${empleadoId}`)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('detallesEmpleadoBody').innerHTML = html;
+                document.getElementById('btnEditarDesdeDetalles').dataset.id = empleadoId;
+                
+                // Configurar botón eliminar si existe
+                const btnEliminar = document.getElementById('btnEliminarEmpleado');
+                if (btnEliminar) {
+                    btnEliminar.addEventListener('click', function() {
+                        const nombre = this.dataset.nombre;
+                        empleadoIdAEliminar = this.dataset.id;
+                        
+                        document.getElementById('nombreEmpleadoEliminar').textContent = nombre;
+                        detallesEmpleadoModal.hide();
+                        
+                        setTimeout(() => {
+                            eliminarEmpleadoModal.show();
+                        }, 500);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('detallesEmpleadoBody').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error al cargar los detalles del empleado.
+                    </div>
+                `;
+            });
+        }
+        
+        // Función para cargar datos del empleado para edición
+        function cargarDatosEmpleado(empleadoId) {
+            // Mostrar modal con datos vacíos por mientras
+            document.getElementById('empleadoModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Empleado';
+            document.getElementById('empleadoId').value = empleadoId;
+            empleadoModal.show();
+            
+            // Cargar datos
+            fetch(`/obtener-empleado/${empleadoId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const empleado = data.empleado;
+                    
+                    // Llenar formulario
+                    document.getElementById('codigo').value = empleado.codigo;
+                    document.getElementById('identidad').value = empleado.identidad;
+                    document.getElementById('nombre').value = empleado.nombre;
+                    document.getElementById('apellido').value = empleado.apellido;
+                    document.getElementById('fecha_nacimiento').value = empleado.fecha_nacimiento;
+                    document.getElementById('fecha_contratacion').value = empleado.fecha_contratacion;
+                    document.getElementById('puesto').value = empleado.puesto;
+                    document.getElementById('departamento').value = empleado.departamento;
+                    document.getElementById('telefono').value = empleado.telefono;
+                    document.getElementById('email').value = empleado.email || '';
+                    document.getElementById('direccion').value = empleado.direccion;
+                    document.getElementById('sueldo_base').value = empleado.sueldo_base;
+                    document.getElementById('estado').value = empleado.estado;
+                    document.getElementById('cuenta_bancaria').value = empleado.cuenta_bancaria || '';
+                    document.getElementById('banco').value = empleado.banco || '';
+                    document.getElementById('notas').value = empleado.notas || '';
+                    
+                    // Mostrar foto si existe
+                    const previewFoto = document.getElementById('previewFoto');
+                    if (empleado.foto) {
+                        previewFoto.querySelector('img').src = '/static/' + empleado.foto;
+                        previewFoto.classList.remove('d-none');
+                    } else {
+                        previewFoto.classList.add('d-none');
+                    }
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    empleadoModal.hide();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al cargar los datos del empleado', 'danger');
+                empleadoModal.hide();
+            });
+        }
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (empleadoIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-empleado/${empleadoIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarEmpleadoModal.hide();
+                    
+                    if (data.success) {
+                        mostrarNotificacion('Empleado eliminado correctamente', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarEmpleadoModal.hide();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

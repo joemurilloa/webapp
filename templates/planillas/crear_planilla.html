@@ -1,0 +1,653 @@
+{% extends 'base.html' %}
+
+{% block title %}Crear Planilla - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+    }
+    .card:hover {
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    }
+    .form-section {
+        margin-bottom: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 5px;
+        background-color: #f8f9fa;
+    }
+    .empleado-row {
+        border-bottom: 1px solid #dee2e6;
+        padding: 10px 0;
+    }
+    
+    .empleado-row:last-child {
+        border-bottom: none;
+    }
+    
+    .empleado-check-label {
+        font-weight: 500;
+    }
+    
+    .empleado-info {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+    
+    .success-message {
+        display: none;
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-file-invoice-dollar"></i> Crear Nueva Planilla
+                </h2>
+                <p class="text-center">Complete el formulario para generar una planilla de pago para los empleados.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulario de Planilla -->
+<form id="planillaForm" class="needs-validation" novalidate>
+    <!-- Datos Generales de la Planilla -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fas fa-info-circle"></i> Información General</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="tipo" class="form-label">Tipo de Planilla</label>
+                    <select class="form-select" id="tipo" name="tipo" required>
+                        <option value="" selected disabled>Seleccione...</option>
+                        <option value="Quincenal">Quincenal</option>
+                        <option value="Mensual">Mensual</option>
+                        <option value="Semanal">Semanal</option>
+                    </select>
+                    <div class="invalid-feedback">
+                        Por favor seleccione un tipo de planilla.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_inicio" class="form-label">Fecha Inicio</label>
+                    <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" required>
+                    <div class="invalid-feedback">
+                        Por favor ingrese la fecha de inicio.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_fin" class="form-label">Fecha Fin</label>
+                    <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
+                    <div class="invalid-feedback">
+                        Por favor ingrese la fecha de fin.
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <label for="fecha_pago" class="form-label">Fecha de Pago</label>
+                    <input type="date" class="form-control" id="fecha_pago" name="fecha_pago" required>
+                    <div class="invalid-feedback">
+                        Por favor ingrese la fecha de pago.
+                    </div>
+                </div>
+                <div class="col-md-8">
+                    <label for="notas" class="form-label">Notas</label>
+                    <textarea class="form-control" id="notas" name="notas" rows="1"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selección de Empleados -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4><i class="fas fa-users"></i> Selección de Empleados</h4>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="seleccionarTodos">
+                        <label class="form-check-label fw-bold" for="seleccionarTodos">
+                            Seleccionar Todos los Empleados Activos
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="buscarEmpleado" placeholder="Buscar empleado...">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px;"></th>
+                            <th>Empleado</th>
+                            <th>Puesto</th>
+                            <th>Departamento</th>
+                            <th>Sueldo Base</th>
+                            <th>Días Trab.</th>
+                            <th>Horas Extra</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaEmpleados">
+                        {% for empleado in empleados %}
+                            <tr class="empleado-row" data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input checkbox-empleado" type="checkbox" 
+                                            id="empleado_{{ empleado.id }}" name="empleados[]" value="{{ empleado.id }}">
+                                    </div>
+                                </td>
+                                <td>
+                                    <label for="empleado_{{ empleado.id }}" class="empleado-check-label">
+                                        {{ empleado.nombre }} {{ empleado.apellido }}
+                                    </label>
+                                </td>
+                                <td>{{ empleado.puesto }}</td>
+                                <td>{{ empleado.departamento }}</td>
+                                <td>L. {{ empleado.sueldo_base|round(2) }}</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm dias-trabajados"
+                                           id="dias_trabajados_{{ empleado.id }}" name="dias_trabajados_{{ empleado.id }}"
+                                           value="15" min="0" max="30" step="0.5" style="width: 70px;">
+                                </td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control form-control-sm horas-extra"
+                                               id="horas_extra_{{ empleado.id }}" name="horas_extra_{{ empleado.id }}"
+                                               value="0" min="0" style="width: 60px;">
+                                        <input type="hidden" id="horas_extra_monto_{{ empleado.id }}" name="horas_extra_monto_{{ empleado.id }}" value="0">
+                                    </div>
+                                </td>
+                            </tr>
+                            
+                            <!-- Fila oculta para detalles adicionales -->
+                            <tr class="empleado-detalles bg-light d-none" id="detalles_{{ empleado.id }}">
+                                <td colspan="7">
+                                    <div class="row g-3 mx-2 my-2">
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Bonificación</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="bonificacion_{{ empleado.id }}" name="bonificacion_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Comisiones</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="comisiones_{{ empleado.id }}" name="comisiones_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Otros Ingresos</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="otros_ingresos_{{ empleado.id }}" name="otros_ingresos_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Anticipo</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="anticipo_{{ empleado.id }}" name="anticipo_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Préstamos</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="prestamos_{{ empleado.id }}" name="prestamos_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label small">Otras Deducciones</label>
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">L.</span>
+                                                <input type="number" class="form-control form-control-sm" 
+                                                       id="otras_deducciones_{{ empleado.id }}" name="otras_deducciones_{{ empleado.id }}"
+                                                       value="0" min="0" step="0.01">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary cerrar-detalles"
+                                                    data-id="{{ empleado.id }}">
+                                                <i class="fas fa-times"></i> Cerrar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-3">
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle"></i> No hay empleados activos registrados.
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón de Envío -->
+    <div class="text-center mb-5">
+        <button type="button" class="btn btn-lg btn-secondary me-2" id="btnPrevisualizar">
+            <i class="fas fa-eye"></i> Previsualizar
+        </button>
+        <button type="submit" class="btn btn-lg btn-primary">
+            <i class="fas fa-save"></i> Guardar Planilla
+        </button>
+    </div>
+</form>
+
+<!-- Mensaje de éxito -->
+<div id="successMessage" class="alert alert-success success-message text-center">
+    <h4><i class="fas fa-check-circle"></i> ¡Planilla creada exitosamente!</h4>
+    <p>Planilla #<span id="numeroPlanilla"></span></p>
+    <a id="verPlanillaLink" href="#" class="btn btn-primary">
+        <i class="fas fa-eye"></i> Ver Planilla
+    </a>
+</div>
+
+<!-- Modal de Previsualización -->
+<div class="modal fade" id="previsualizarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-eye"></i> Previsualización de Planilla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <p><strong>Tipo:</strong> <span id="prevTipo"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Período:</strong> <span id="prevPeriodo"></span></p>
+                    </div>
+                    <div class="col-md-4">
+                        <p><strong>Fecha de Pago:</strong> <span id="prevFechaPago"></span></p>
+                    </div>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Empleado</th>
+                                <th>Sueldo Base</th>
+                                <th>Días Trab.</th>
+                                <th>Ingresos</th>
+                                <th>Deducciones</th>
+                                <th>Neto a Pagar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prevEmpleados">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td colspan="3" class="text-end">TOTALES:</td>
+                                <td id="prevTotalIngresos">L. 0.00</td>
+                                <td id="prevTotalDeducciones">L. 0.00</td>
+                                <td id="prevTotalNeto">L. 0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarGuardar">
+                    <i class="fas fa-save"></i> Confirmar y Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales
+        const modal = new bootstrap.Modal(document.getElementById('previsualizarModal'));
+        
+        // Configurar fechas por defecto
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0);
+        const quincena = new Date(hoy.getFullYear(), hoy.getMonth(), 15);
+        
+        document.getElementById('fecha_inicio').value = formatearFecha(inicioMes);
+        document.getElementById('fecha_fin').value = formatearFecha(finMes);
+        document.getElementById('fecha_pago').value = formatearFecha(hoy);
+        
+        // Evento para ajustar fechas al cambiar tipo de planilla
+        document.getElementById('tipo').addEventListener('change', function() {
+            const tipo = this.value;
+            const fechaInicio = document.getElementById('fecha_inicio');
+            const fechaFin = document.getElementById('fecha_fin');
+            
+            if (tipo === 'Quincenal') {
+                // Primera quincena
+                if (hoy.getDate() <= 15) {
+                    fechaInicio.value = formatearFecha(inicioMes);
+                    fechaFin.value = formatearFecha(quincena);
+                } 
+                // Segunda quincena
+                else {
+                    fechaInicio.value = formatearFecha(new Date(hoy.getFullYear(), hoy.getMonth(), 16));
+                    fechaFin.value = formatearFecha(finMes);
+                }
+            } else if (tipo === 'Mensual') {
+                fechaInicio.value = formatearFecha(inicioMes);
+                fechaFin.value = formatearFecha(finMes);
+            } else if (tipo === 'Semanal') {
+                // Calcular inicio y fin de semana
+                const diaSemana = hoy.getDay(); // 0 = domingo, 6 = sábado
+                const inicioSemana = new Date(hoy);
+                inicioSemana.setDate(hoy.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1)); // Lunes anterior
+                
+                const finSemana = new Date(inicioSemana);
+                finSemana.setDate(inicioSemana.getDate() + 6); // Domingo
+                
+                fechaInicio.value = formatearFecha(inicioSemana);
+                fechaFin.value = formatearFecha(finSemana);
+            }
+            
+            // Ajustar días trabajados según tipo de planilla
+            const diasInputs = document.querySelectorAll('.dias-trabajados');
+            diasInputs.forEach(input => {
+                if (tipo === 'Quincenal') {
+                    input.value = 15;
+                } else if (tipo === 'Mensual') {
+                    input.value = 30;
+                } else if (tipo === 'Semanal') {
+                    input.value = 7;
+                }
+            });
+        });
+        
+        // Seleccionar/deseleccionar todos los empleados
+        document.getElementById('seleccionarTodos').addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.checkbox-empleado');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = this.checked;
+            });
+        });
+        
+        // Filtrar empleados por búsqueda
+        document.getElementById('buscarEmpleado').addEventListener('input', function() {
+            const busqueda = this.value.toLowerCase();
+            const filas = document.querySelectorAll('.empleado-row');
+            
+            filas.forEach(fila => {
+                const nombre = fila.dataset.nombre.toLowerCase();
+                if (nombre.includes(busqueda)) {
+                    fila.style.display = '';
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+        });
+        
+        // Mostrar/ocultar detalles adicionales al hacer click en la fila
+        document.querySelectorAll('.empleado-row').forEach(fila => {
+            fila.addEventListener('dblclick', function() {
+                const id = this.querySelector('.checkbox-empleado').value;
+                const detalles = document.getElementById(`detalles_${id}`);
+                detalles.classList.toggle('d-none');
+            });
+        });
+        
+        // Cerrar detalles
+        document.querySelectorAll('.cerrar-detalles').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = this.dataset.id;
+                document.getElementById(`detalles_${id}`).classList.add('d-none');
+            });
+        });
+        
+        // Calcular monto de horas extra
+        document.querySelectorAll('.horas-extra').forEach(input => {
+            input.addEventListener('input', function() {
+                const id = this.id.split('_')[2];
+                const horasExtra = parseFloat(this.value) || 0;
+                const sueldoBase = parseFloat(document.querySelector(`tr[data-nombre][id$="${id}"] td:nth-child(5)`).textContent.replace('L. ', '')) || 0;
+                
+                // Calcular valor de la hora extra (1.5 veces el valor normal)
+                const valorHora = sueldoBase / 30 / 8; // Sueldo diario / 8 horas
+                const montoHorasExtra = horasExtra * valorHora * 1.5;
+                
+                document.getElementById(`horas_extra_monto_${id}`).value = montoHorasExtra.toFixed(2);
+            });
+        });
+        
+        // Previsualizar planilla
+        document.getElementById('btnPrevisualizar').addEventListener('click', function() {
+            // Verificar que haya empleados seleccionados
+            const empleadosSeleccionados = document.querySelectorAll('.checkbox-empleado:checked');
+            if (empleadosSeleccionados.length === 0) {
+                alert('Debe seleccionar al menos un empleado para generar la planilla.');
+                return;
+            }
+            
+            // Obtener datos generales
+            const tipo = document.getElementById('tipo').value;
+            const fechaInicio = document.getElementById('fecha_inicio').value;
+            const fechaFin = document.getElementById('fecha_fin').value;
+            const fechaPago = document.getElementById('fecha_pago').value;
+            
+            if (!tipo || !fechaInicio || !fechaFin || !fechaPago) {
+                alert('Por favor complete todos los campos generales de la planilla.');
+                return;
+            }
+            
+            // Mostrar datos generales en la previsualización
+            document.getElementById('prevTipo').textContent = tipo;
+            document.getElementById('prevPeriodo').textContent = `Del ${formatearFechaVisual(fechaInicio)} al ${formatearFechaVisual(fechaFin)}`;
+            document.getElementById('prevFechaPago').textContent = formatearFechaVisual(fechaPago);
+            
+            // Calcular y mostrar detalles por empleado
+            let htmlEmpleados = '';
+            let totalIngresos = 0;
+            let totalDeducciones = 0;
+            let totalNeto = 0;
+            
+            empleadosSeleccionados.forEach(checkbox => {
+                const id = checkbox.value;
+                const fila = checkbox.closest('tr');
+                const nombre = fila.querySelector('label').textContent.trim();
+                const sueldoBase = parseFloat(fila.querySelector('td:nth-child(5)').textContent.replace('L. ', ''));
+                const diasTrabajados = parseFloat(document.getElementById(`dias_trabajados_${id}`).value) || 0;
+                const horasExtra = parseFloat(document.getElementById(`horas_extra_${id}`).value) || 0;
+                const horasExtraMonto = parseFloat(document.getElementById(`horas_extra_monto_${id}`).value) || 0;
+                
+                // Calcular sueldo proporcional a días trabajados
+                const diasPeriodo = tipo === 'Quincenal' ? 15 : (tipo === 'Mensual' ? 30 : 7);
+                const sueldoProporcional = sueldoBase * (diasTrabajados / diasPeriodo);
+                
+                // Otros ingresos
+                const bonificacion = parseFloat(document.getElementById(`bonificacion_${id}`)?.value || 0);
+                const comisiones = parseFloat(document.getElementById(`comisiones_${id}`)?.value || 0);
+                const otrosIngresos = parseFloat(document.getElementById(`otros_ingresos_${id}`)?.value || 0);
+                
+                // Deducciones
+                // IHSS (seguridad social)
+                const techoIHSS = tipo === 'Quincenal' ? 9849.70/2 : 9849.70; // Techo mensual para 2023
+                const sueldoIHSS = Math.min(sueldoProporcional, techoIHSS);
+                const ihss = sueldoIHSS * 0.025; // 2.5%
+                
+                // RAP (aportaciones privadas)
+                const rap = sueldoProporcional * 0.015; // 1.5%
+                
+                // ISR (impuesto sobre la renta) - simplificado
+                let isr = 0;
+                // Si el sueldo proyectado anual es mayor a 180,000, se aplica ISR
+                const sueldoAnual = sueldoBase * 12;
+                if (sueldoAnual > 180000) {
+                    if (tipo === 'Mensual') {
+                        isr = (sueldoProporcional - 15000) * 0.15 / 12;
+                    } else if (tipo === 'Quincenal') {
+                        isr = (sueldoProporcional - 7500) * 0.15 / 24;
+                    } else { // Semanal
+                        isr = (sueldoProporcional - 3462) * 0.15 / 52;
+                    }
+                    isr = Math.max(0, isr); // Asegurar que no sea negativo
+                }
+                
+                // Otras deducciones
+                const anticipo = parseFloat(document.getElementById(`anticipo_${id}`)?.value || 0);
+                const prestamos = parseFloat(document.getElementById(`prestamos_${id}`)?.value || 0);
+                const otrasDeducciones = parseFloat(document.getElementById(`otras_deducciones_${id}`)?.value || 0);
+                
+                // Totales por empleado
+                const totalIngresosEmpleado = sueldoProporcional + horasExtraMonto + bonificacion + comisiones + otrosIngresos;
+                const totalDeduccionesEmpleado = ihss + rap + isr + anticipo + prestamos + otrasDeducciones;
+                const netoEmpleado = totalIngresosEmpleado - totalDeduccionesEmpleado;
+                
+                // Acumular totales generales
+                totalIngresos += totalIngresosEmpleado;
+                totalDeducciones += totalDeduccionesEmpleado;
+                totalNeto += netoEmpleado;
+                
+                // Agregar fila a la previsualización
+                htmlEmpleados += `
+                    <tr>
+                        <td>${nombre}</td>
+                        <td>L. ${sueldoBase.toFixed(2)}</td>
+                        <td>${diasTrabajados}</td>
+                        <td>
+                            L. ${totalIngresosEmpleado.toFixed(2)}
+                            <small class="d-block text-muted">
+                                Sueldo: L. ${sueldoProporcional.toFixed(2)} | 
+                                Extras: L. ${(horasExtraMonto + bonificacion + comisiones + otrosIngresos).toFixed(2)}
+                            </small>
+                        </td>
+                        <td>
+                            L. ${totalDeduccionesEmpleado.toFixed(2)}
+                            <small class="d-block text-muted">
+                                IHSS: L. ${ihss.toFixed(2)} | 
+                                RAP: L. ${rap.toFixed(2)} | 
+                                ISR: L. ${isr.toFixed(2)} | 
+                                Otras: L. ${(anticipo + prestamos + otrasDeducciones).toFixed(2)}
+                            </small>
+                        </td>
+                        <td class="fw-bold">L. ${netoEmpleado.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Actualizar contenido de la tabla
+            document.getElementById('prevEmpleados').innerHTML = htmlEmpleados;
+            document.getElementById('prevTotalIngresos').textContent = `L. ${totalIngresos.toFixed(2)}`;
+            document.getElementById('prevTotalDeducciones').textContent = `L. ${totalDeducciones.toFixed(2)}`;
+            document.getElementById('prevTotalNeto').textContent = `L. ${totalNeto.toFixed(2)}`;
+            
+            // Mostrar modal
+            modal.show();
+        });
+        
+        // Confirmar y guardar desde modal
+        document.getElementById('btnConfirmarGuardar').addEventListener('click', function() {
+            document.getElementById('planillaForm').dispatchEvent(new Event('submit'));
+            modal.hide();
+        });
+        
+        // Enviar formulario
+        document.getElementById('planillaForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Verificar que haya empleados seleccionados
+            const empleadosSeleccionados = document.querySelectorAll('.checkbox-empleado:checked');
+            if (empleadosSeleccionados.length === 0) {
+                alert('Debe seleccionar al menos un empleado para generar la planilla.');
+                return;
+            }
+            
+            // Deshabilitar botón de envío
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+            
+            // Crear objeto FormData con los datos del formulario
+            const formData = new FormData(this);
+            
+            // Enviar datos al servidor
+            fetch('/guardar-planilla', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    document.getElementById('numeroPlanilla').textContent = data.numero_planilla;
+                    document.getElementById('verPlanillaLink').href = `/ver-planilla/${data.planilla_id}`;
+                    document.getElementById('successMessage').style.display = 'block';
+                    
+                    // Desplazar a mensaje de éxito
+                    document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth' });
+                    
+                    // Deshabilitar formulario
+                    const inputs = this.querySelectorAll('input, select, textarea, button');
+                    inputs.forEach(input => {
+                        input.disabled = true;
+                    });
+                } else {
+                    alert('Error: ' + data.mensaje);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al generar la planilla. Por favor, intente de nuevo.');
+            })
+            .finally(() => {
+                // Restaurar botón de envío
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalBtnText;
+            });
+        });
+        
+        // Función para formatear fecha en formato ISO (YYYY-MM-DD)
+        function formatearFecha(fecha) {
+            return fecha.toISOString().split('T')[0];
+        }
+        
+        // Función para formatear fecha en formato visual (DD/MM/YYYY)
+        function formatearFechaVisual(fechaISO) {
+            const partes = fechaISO.split('-');
+            return `${partes[2]}/${partes[1]}/${partes[0]}`;
+        }
+    });
+</script>
+{% endblock %}

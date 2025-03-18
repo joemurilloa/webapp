@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Planillas - Remodelaciones WM{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-user-tie"></i> Módulo de Planillas
+                </h2>
+                <p class="text-center">Gestión de empleados, planillas y asignación de recursos humanos a proyectos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Tarjeta para Gestión de Empleados -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-4x text-primary mb-3"></i>
+                <h3 class="card-title">Empleados</h3>
+                <p class="card-text">Administre la información de los empleados, incluyendo datos personales, cargos y sueldos.</p>
+                <a href="{{ url_for('empleados') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus"></i> Gestionar Empleados
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta para Planillas -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-file-invoice-dollar fa-4x text-success mb-3"></i>
+                <h3 class="card-title">Planillas</h3>
+                <p class="card-text">Genere planillas quincenales o mensuales con cálculo automático de sueldos y deducciones.</p>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('crear_planilla') }}" class="btn btn-success">
+                        <i class="fas fa-plus-circle"></i> Nueva Planilla
+                    </a>
+                    <a href="{{ url_for('lista_planillas') }}" class="btn btn-outline-success">
+                        <i class="fas fa-list"></i> Ver Planillas
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Tarjeta para Reportes -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-chart-line fa-4x text-info mb-3"></i>
+                <h3 class="card-title">Reportes</h3>
+                <p class="card-text">Visualice informes sobre costos de personal, planillas mensuales y rendimiento por proyecto.</p>
+                <a href="{{ url_for('reportes_planillas') }}" class="btn btn-info text-white">
+                    <i class="fas fa-chart-bar"></i> Ver Reportes
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Estadísticas Rápidas -->
+<div class="card mt-3">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-tachometer-alt"></i> Estadísticas Rápidas</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="mb-0">{{ empleados_activos|default(0) }}</h5>
+                        <p class="text-muted mb-0">Empleados Activos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="mb-0">L. {{ total_planillas|default(0)|round(2) }}</h5>
+                        <p class="text-muted mb-0">Planillas del Mes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="mb-0">{{ proyectos_activos|default(0) }}</h5>
+                        <p class="text-muted mb-0">Proyectos Activos</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5 class="mb-0">L. {{ costo_rrhh_mes|default(0)|round(2) }}</h5>
+                        <p class="text-muted mb-0">Costo RRHH (Mes)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

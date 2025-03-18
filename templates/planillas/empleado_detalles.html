@@ -1,0 +1,234 @@
+<div class="row">
+    <!-- Información básica del empleado -->
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-user"></i> Información Personal</h5>
+            </div>
+            <div class="card-body text-center">
+                {% if empleado.foto %}
+                    <img src="{{ url_for('static', filename=empleado.foto) }}" alt="Foto de {{ empleado.nombre }}" class="img-thumbnail rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                {% else %}
+                    <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
+                        <i class="fas fa-user fa-4x text-white"></i>
+                    </div>
+                {% endif %}
+                
+                <h4>{{ empleado.nombre }} {{ empleado.apellido }}</h4>
+                <p class="text-muted mb-3">{{ empleado.puesto }}</p>
+                
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-id-card me-2 text-primary"></i> Código:</span>
+                        <span class="badge bg-secondary">{{ empleado.codigo }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-id-badge me-2 text-primary"></i> Identidad:</span>
+                        <span>{{ empleado.identidad }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-birthday-cake me-2 text-primary"></i> Fecha Nac.:</span>
+                        <span>{{ empleado.fecha_nacimiento.strftime('%d/%m/%Y') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar-check me-2 text-primary"></i> Contratación:</span>
+                        <span>{{ empleado.fecha_contratacion.strftime('%d/%m/%Y') }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-building me-2 text-primary"></i> Departamento:</span>
+                        <span>{{ empleado.departamento }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-money-bill-wave me-2 text-primary"></i> Sueldo Base:</span>
+                        <span class="fw-bold">L. {{ empleado.sueldo_base|round(2) }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-circle me-2 text-primary"></i> Estado:</span>
+                        {% if empleado.estado == 'Activo' %}
+                            <span class="badge bg-success">Activo</span>
+                        {% elif empleado.estado == 'Inactivo' %}
+                            <span class="badge bg-secondary">Inactivo</span>
+                        {% elif empleado.estado == 'Suspendido' %}
+                            <span class="badge bg-warning text-dark">Suspendido</span>
+                        {% endif %}
+                    </li>
+                </ul>
+                
+                <button type="button" id="btnEliminarEmpleado" class="btn btn-danger mt-3" 
+                        data-id="{{ empleado.id }}" 
+                        data-nombre="{{ empleado.nombre }} {{ empleado.apellido }}">
+                    <i class="fas fa-trash"></i> Eliminar Empleado
+                </button>
+            </div>
+        </div>
+        
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-address-book"></i> Contacto</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-phone me-2 text-primary"></i> Teléfono:</span>
+                        <span>{{ empleado.telefono }}</span>
+                    </li>
+                    {% if empleado.email %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-envelope me-2 text-primary"></i> Email:</span>
+                        <span>{{ empleado.email }}</span>
+                    </li>
+                    {% endif %}
+                    <li class="list-group-item">
+                        <div><i class="fas fa-map-marker-alt me-2 text-primary"></i> Dirección:</div>
+                        <div class="mt-1 text-muted">{{ empleado.direccion }}</div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        {% if empleado.cuenta_bancaria %}
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-money-check"></i> Datos Bancarios</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-university me-2 text-primary"></i> Banco:</span>
+                        <span>{{ empleado.banco }}</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-credit-card me-2 text-primary"></i> Cuenta:</span>
+                        <span>{{ empleado.cuenta_bancaria }}</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Historial y asignaciones -->
+    <div class="col-md-8">
+        <!-- Proyectos asignados -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-clipboard-list"></i> Proyectos Asignados</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Proyecto</th>
+                                <th>Rol</th>
+                                <th>Fecha Asignación</th>
+                                <th>Horas</th>
+                                <th>Costo Total</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if proyectos %}
+                                {% for proyecto in proyectos %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('ver_cotizacion', numero_cotizacion=proyecto.cotizacion.numero_cotizacion) }}">
+                                                {{ proyecto.cotizacion.numero_cotizacion }}
+                                            </a>
+                                        </td>
+                                        <td>{{ proyecto.rol }}</td>
+                                        <td>{{ proyecto.fecha_asignacion.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ proyecto.horas_asignadas }}</td>
+                                        <td>L. {{ proyecto.costo_total|round(2) }}</td>
+                                        <td>
+                                            {% if proyecto.estado == 'Asignado' %}
+                                                <span class="badge bg-info">Asignado</span>
+                                            {% elif proyecto.estado == 'En progreso' %}
+                                                <span class="badge bg-warning text-dark">En progreso</span>
+                                            {% elif proyecto.estado == 'Completado' %}
+                                                <span class="badge bg-success">Completado</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-3">No hay proyectos asignados</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Historial de planillas -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-file-invoice-dollar"></i> Historial de Planillas</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Número</th>
+                                <th>Fecha Pago</th>
+                                <th>Días Trab.</th>
+                                <th>Ingresos</th>
+                                <th>Deducciones</th>
+                                <th>Neto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if planillas %}
+                                {% for detalle in planillas %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('ver_planilla', planilla_id=detalle.planilla.id) }}">
+                                                {{ detalle.planilla.numero_planilla }}
+                                            </a>
+                                        </td>
+                                        <td>{{ detalle.planilla.fecha_pago.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ detalle.dias_trabajados }}</td>
+                                        <td>L. {{ detalle.total_ingresos|round(2) }}</td>
+                                        <td>L. {{ detalle.total_deducciones|round(2) }}</td>
+                                        <td class="fw-bold">L. {{ detalle.sueldo_neto|round(2) }}</td>
+                                        <td>
+                                            {% if detalle.planilla.estado == 'Borrador' %}
+                                                <span class="badge bg-secondary">Borrador</span>
+                                            {% elif detalle.planilla.estado == 'Aprobada' %}
+                                                <span class="badge bg-info">Aprobada</span>
+                                            {% elif detalle.planilla.estado == 'Pagada' %}
+                                                <span class="badge bg-success">Pagada</span>
+                                            {% elif detalle.planilla.estado == 'Anulada' %}
+                                                <span class="badge bg-danger">Anulada</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-3">No hay registros de planillas</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Notas -->
+        {% if empleado.notas %}
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-sticky-note"></i> Notas</h5>
+            </div>
+            <div class="card-body">
+                <p class="fst-italic text-muted">{{ empleado.notas }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>

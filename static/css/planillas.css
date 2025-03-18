@@ -1,0 +1,215 @@
+/* Estilos específicos para el módulo de Planillas */
+
+/* Tarjetas de estadísticas */
+.stats-card {
+    transition: all 0.3s;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card .card-body {
+    padding: 1.5rem;
+}
+
+.stats-card .stats-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+}
+
+.stats-card .stats-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stats-card .stats-label {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Tarjeta de empleado */
+.empleado-card {
+    transition: all 0.3s;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.empleado-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.empleado-card .card-header {
+    padding: 1rem;
+    border-bottom: none;
+}
+
+.empleado-card .card-body {
+    padding: 1.5rem;
+}
+
+.empleado-card .empleado-foto {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.empleado-card .empleado-nombre {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.empleado-card .empleado-puesto {
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.empleado-card .empleado-info {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.empleado-card .empleado-info li {
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+}
+
+.empleado-card .empleado-info li i {
+    color: #0d6efd;
+    margin-right: 0.5rem;
+    width: 20px;
+    text-align: center;
+}
+
+/* Formulario de planilla */
+.planilla-form .form-label {
+    font-weight: 500;
+}
+
+.planilla-form .input-group-text {
+    background-color: #f8f9fa;
+}
+
+.empleado-row {
+    padding: 1rem;
+    border-bottom: 1px solid #e9ecef;
+    transition: all 0.2s;
+}
+
+.empleado-row:hover {
+    background-color: #f8f9fa;
+}
+
+.empleado-row:last-child {
+    border-bottom: none;
+}
+
+.empleado-check-label {
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Tabla de planillas */
+.table-planillas th, .table-planillas td {
+    vertical-align: middle;
+}
+
+.table-planillas tbody tr {
+    transition: all 0.2s;
+}
+
+.table-planillas tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.badge-estado {
+    font-size: 85%;
+    padding: 0.4em 0.6em;
+    border-radius: 4px;
+}
+
+/* Gráficos de reportes */
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+.reporte-card {
+    cursor: pointer;
+    transition: all 0.3s;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.reporte-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+.reporte-card .card-body {
+    padding: 2rem;
+    text-align: center;
+}
+
+.reporte-card .reporte-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #0d6efd;
+}
+
+/* Estilos para impresión */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-full-width {
+        width: 100% !important;
+    }
+    
+    body {
+        padding: 0;
+        margin: 0;
+    }
+    
+    .container {
+        max-width: 100%;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa !important;
+        color: #000 !important;
+    }
+    
+    .table {
+        width: 100% !important;
+    }
+}

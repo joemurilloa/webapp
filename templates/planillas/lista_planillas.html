@@ -1,0 +1,349 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial de Planillas - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-planillas th, .table-planillas td {
+        vertical-align: middle;
+    }
+    
+    .badge-estado {
+        font-size: 85%;
+        padding: 0.4em 0.6em;
+    }
+    
+    .filtro-container {
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+
+    .actions-column {
+        width: 150px;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.765rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">
+                    <i class="fas fa-history"></i> Historial de Planillas
+                </h2>
+                <p class="text-center">Consulte las planillas generadas previamente.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtros de búsqueda -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-filter"></i> Filtros de Búsqueda</h4>
+    </div>
+    <div class="card-body">
+        <form id="filtroForm" method="GET" action="{{ url_for('lista_planillas') }}">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label for="filtroTipo" class="form-label">Tipo</label>
+                    <select class="form-select" id="filtroTipo" name="tipo">
+                        <option value="">Todos</option>
+                        <option value="Quincenal" {% if request.args.get('tipo') == 'Quincenal' %}selected{% endif %}>Quincenal</option>
+                        <option value="Mensual" {% if request.args.get('tipo') == 'Mensual' %}selected{% endif %}>Mensual</option>
+                        <option value="Semanal" {% if request.args.get('tipo') == 'Semanal' %}selected{% endif %}>Semanal</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="filtroEstado" class="form-label">Estado</label>
+                    <select class="form-select" id="filtroEstado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="Borrador" {% if request.args.get('estado') == 'Borrador' %}selected{% endif %}>Borrador</option>
+                        <option value="Aprobada" {% if request.args.get('estado') == 'Aprobada' %}selected{% endif %}>Aprobada</option>
+                        <option value="Pagada" {% if request.args.get('estado') == 'Pagada' %}selected{% endif %}>Pagada</option>
+                        <option value="Anulada" {% if request.args.get('estado') == 'Anulada' %}selected{% endif %}>Anulada</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="filtroFechaDesde" class="form-label">Fecha Desde</label>
+                    <input type="date" class="form-control" id="filtroFechaDesde" name="fecha_desde" value="{{ request.args.get('fecha_desde', '') }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="filtroFechaHasta" class="form-label">Fecha Hasta</label>
+                    <input type="date" class="form-control" id="filtroFechaHasta" name="fecha_hasta" value="{{ request.args.get('fecha_hasta', '') }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tabla de Planillas -->
+<div class="card">
+    <div class="card-body">
+        {% if planillas %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-planillas">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Número</th>
+                            <th>Tipo</th>
+                            <th>Período</th>
+                            <th>Fecha Pago</th>
+                            <th>Empleados</th>
+                            <th>Total Neto</th>
+                            <th>Estado</th>
+                            <th class="actions-column">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for planilla in planillas %}
+                            <tr>
+                                <td>{{ planilla.numero_planilla }}</td>
+                                <td>{{ planilla.tipo }}</td>
+                                <td>{{ planilla.fecha_inicio.strftime('%d/%m/%Y') }} - {{ planilla.fecha_fin.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ planilla.fecha_pago.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ planilla.detalles|length }}</td>
+                                <td>L. {{ planilla.total_neto|round(2) }}</td>
+                                <td>
+                                    {% if planilla.estado == 'Borrador' %}
+                                        <span class="badge bg-secondary badge-estado">Borrador</span>
+                                    {% elif planilla.estado == 'Aprobada' %}
+                                        <span class="badge bg-info badge-estado">Aprobada</span>
+                                    {% elif planilla.estado == 'Pagada' %}
+                                        <span class="badge bg-success badge-estado">Pagada</span>
+                                    {% elif planilla.estado == 'Anulada' %}
+                                        <span class="badge bg-danger badge-estado">Anulada</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('ver_planilla', planilla_id=planilla.id) }}" class="btn btn-info btn-sm" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if planilla.estado == 'Borrador' %}
+                                            <button type="button" class="btn btn-success btn-sm btn-aprobar-planilla" 
+                                                    data-id="{{ planilla.id }}" 
+                                                    data-numero="{{ planilla.numero_planilla }}" 
+                                                    title="Aprobar planilla">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-danger btn-sm btn-eliminar" 
+                                                    data-id="{{ planilla.id }}" 
+                                                    data-numero="{{ planilla.numero_planilla }}" 
+                                                    title="Eliminar">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        {% elif planilla.estado == 'Aprobada' %}
+                                            <button type="button" class="btn btn-success btn-sm btn-marcar-pagada" 
+                                                    data-id="{{ planilla.id }}" 
+                                                    data-numero="{{ planilla.numero_planilla }}" 
+                                                    title="Marcar como pagada">
+                                                <i class="fas fa-money-bill-wave"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-warning btn-sm btn-anular-planilla" 
+                                                    data-id="{{ planilla.id }}" 
+                                                    data-numero="{{ planilla.numero_planilla }}" 
+                                                    title="Anular planilla">
+                                                <i class="fas fa-ban"></i>
+                                            </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle"></i> No se encontraron planillas.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Enlace para crear nueva planilla -->
+<div class="text-center mt-4">
+    <a href="{{ url_for('crear_planilla') }}" class="btn btn-primary">
+        <i class="fas fa-plus-circle"></i> Crear Nueva Planilla
+    </a>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar la planilla <strong id="numeroEliminar"></strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Cambiar Estado -->
+<div class="modal fade" id="cambiarEstadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-exchange-alt"></i> Cambiar Estado de Planilla</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea cambiar el estado de la planilla <strong id="numeroCambiarEstado"></strong> a <strong id="nuevoEstado"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarCambiarEstado" class="btn btn-primary">Confirmar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Modal de eliminación
+        const eliminarModal = new bootstrap.Modal(document.getElementById('eliminarModal'));
+        const cambiarEstadoModal = new bootstrap.Modal(document.getElementById('cambiarEstadoModal'));
+        let planillaIdAEliminar = null;
+        let planillaIdACambiarEstado = null;
+        let nuevoEstadoPlanilla = '';
+        
+        // Configurar botones para eliminar
+        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+            btn.addEventListener('click', function() {
+                planillaIdAEliminar = this.dataset.id;
+                document.getElementById('numeroEliminar').textContent = this.dataset.numero;
+                eliminarModal.show();
+            });
+        });
+        
+        // Configurar botones para aprobar planilla
+        document.querySelectorAll('.btn-aprobar-planilla').forEach(btn => {
+            btn.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Aprobada';
+                nuevoEstadoPlanilla = 'Aprobada';
+                cambiarEstadoModal.show();
+            });
+        });
+        
+        // Configurar botones para marcar como pagada
+        document.querySelectorAll('.btn-marcar-pagada').forEach(btn => {
+            btn.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Pagada';
+                nuevoEstadoPlanilla = 'Pagada';
+                cambiarEstadoModal.show();
+            });
+        });
+        
+        // Configurar botones para anular planilla
+        document.querySelectorAll('.btn-anular-planilla').forEach(btn => {
+            btn.addEventListener('click', function() {
+                planillaIdACambiarEstado = this.dataset.id;
+                document.getElementById('numeroCambiarEstado').textContent = this.dataset.numero;
+                document.getElementById('nuevoEstado').textContent = 'Anulada';
+                nuevoEstadoPlanilla = 'Anulada';
+                cambiarEstadoModal.show();
+            });
+        });
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (planillaIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-planilla/${planillaIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarModal.hide();
+                    
+                    if (data.success) {
+                        // Mostrar notificación de éxito
+                        mostrarNotificacion('Planilla eliminada correctamente', 'success');
+                        
+                        // Recargar la página después de un breve retraso
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarModal.hide();
+                });
+            }
+        });
+        
+        // Confirmar cambio de estado
+        document.getElementById('btnConfirmarCambiarEstado').addEventListener('click', function() {
+            if (planillaIdACambiarEstado && nuevoEstadoPlanilla) {
+                // Realizar solicitud AJAX para cambiar estado
+                fetch(`/actualizar-estado-planilla/${planillaIdACambiarEstado}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        estado: nuevoEstadoPlanilla
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    cambiarEstadoModal.hide();
+                    
+                    if (data.success) {
+                        // Mostrar notificación de éxito
+                        mostrarNotificacion(data.mensaje, 'success');
+                        
+                        // Recargar la página después de un breve retraso
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    cambiarEstadoModal.hide();
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

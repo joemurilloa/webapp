@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+
+{% block title %}Asignar Empleados - Proyecto {{ cotizacion.numero_cotizacion }} - Remodelaciones WM{% endblock %}
+
+{% block extra_css %}
+<style>
+    .proyecto-info {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .table-asignaciones th, .table-asignaciones td {
+        vertical-align: middle;
+    }
+    
+    .actions-column {
+        width: 120px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('planillas') }}">Planillas</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('ver_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}">Proyecto</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Asignar Empleados</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Información del proyecto -->
+<div class="proyecto-info">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-2">Proyecto: {{ cotizacion.numero_cotizacion }}</h2>
+            <p class="mb-1"><strong>Cliente:</strong> {{ cliente.nombre }} {{ cliente.apellido }}</p>
+            <p class="mb-1"><strong>Tipo:</strong> {{ cotizacion.tipo_proyecto }}</p>
+            <p class="mb-1"><strong>Fecha:</strong> {{ cotizacion.fecha_creacion.strftime('%d/%m/%Y') }}</p>
+            <p class="mb-0"><strong>Total:</strong> L. {{ cotizacion.total|round(2) }}</p>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <button type="button" class="btn btn-primary" id="btnNuevaAsignacion">
+                <i class="fas fa-user-plus"></i> Asignar Empleado
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Asignaciones actuales -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-users"></i> Empleados Asignados</h4>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 table-asignaciones">
+                <thead class="table-light">
+                    <tr>
+                        <th>Empleado</th>
+                        <th>Rol</th>
+                        <th>Fecha Asignación</th>
+                        <th class="text-center">Horas</th>
+                        <th class="text-center">Costo/Hora</th>
+                        <th class="text-center">Costo Total</th>
+                        <th>Estado</th>
+                        <th class="actions-column">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if asignaciones %}
+                        {% for asignacion in asignaciones %}
+                            {% set empleado = empleados|selectattr('id', 'eq', asignacion.empleado_id)|first %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('empleado_detalles', empleado_id=empleado.id) }}">
+                                        {{ empleado.nombre }} {{ empleado.apellido }}
+                                    </a>
+                                </td>
+                                <td>{{ asignacion.rol }}</td>
+                                <td>{{ asignacion.fecha_asignacion.strftime('%d/%m/%Y') }}</td>
+                                <td class="text-center">{{ asignacion.horas_asignadas }}</td>
+                                <td class="text-center">L. {{ asignacion.costo_hora|round(2) }}</td>
+                                <td class="text-center fw-bold">L. {{ asignacion.costo_total|round(2) }}</td>
+                                <td>
+                                    {% if asignacion.estado == 'Asignado' %}
+                                        <span class="badge bg-info">Asignado</span>
+                                    {% elif asignacion.estado == 'En progreso' %}
+                                        <span class="badge bg-warning text-dark">En progreso</span>
+                                    {% elif asignacion.estado == 'Completado' %}
+                                        <span class="badge bg-success">Completado</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-sm btn-outline-primary btn-editar-asignacion" 
+                                                data-id="{{ asignacion.id }}"
+                                                data-empleado-id="{{ asignacion.empleado_id }}"
+                                                data-rol="{{ asignacion.rol }}"
+                                                data-horas="{{ asignacion.horas_asignadas }}"
+                                                data-costo="{{ asignacion.costo_hora }}"
+                                                data-fecha="{{ asignacion.fecha_asignacion.strftime('%Y-%m-%d') }}"
+                                                data-notas="{{ asignacion.notas or '' }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-asignacion" data-id="{{ asignacion.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="8" class="text-center py-3">No hay empleados asignados a este proyecto</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Resumen de costos -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4><i class="fas fa-calculator"></i> Resumen de Costos</h4>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-primary mb-0">{{ asignaciones|length }}</h3>
+                        <p class="text-muted mb-0">Empleados Asignados</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-primary mb-0">L. {{ asignaciones|sum(attribute='costo_total')|round(2) }}</h3>
+                        <p class="text-muted mb-0">Costo Total Mano de Obra</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <h3 class="text-success mb-0">{{ (asignaciones|sum(attribute='costo_total') / cotizacion.total * 100 if cotizacion.total > 0 else 0)|round(2) }}%</h3>
+                        <p class="text-muted mb-0">% del Presupuesto Total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de acciones -->
+<div class="actions-bar text-center mb-4">
+    <a href="{{ url_for('ver_cotizacion', numero_cotizacion=cotizacion.numero_cotizacion) }}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Proyecto
+    </a>
+    <button type="button" class="btn btn-primary" id="btnReporteCostos">
+        <i class="fas fa-chart-bar"></i> Ver Reporte de Costos
+    </button>
+</div>
+
+<!-- Modal para Asignar/Editar Empleado -->
+<div class="modal fade" id="asignarEmpleadoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="asignarModalTitle"><i class="fas fa-user-plus"></i> Asignar Empleado al Proyecto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="asignarEmpleadoForm">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="empleado_id" class="form-label">Empleado</label>
+                            <select class="form-select" id="empleado_id" name="empleado_id" required>
+                                <option value="" selected disabled>Seleccione un empleado...</option>
+                                {% for empleado in empleados %}
+                                    {% if empleado.estado == 'Activo' %}
+                                        <option value="{{ empleado.id }}" data-sueldo="{{ empleado.sueldo_base }}">
+                                            {{ empleado.nombre }} {{ empleado.apellido }} - {{ empleado.puesto }}
+                                        </option>
+                                    {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="rol" class="form-label">Rol en el Proyecto</label>
+                            <select class="form-select" id="rol" name="rol" required>
+                                <option value="" selected disabled>Seleccione un rol...</option>
+                                <option value="Supervisor">Supervisor</option>
+                                <option value="Albañil">Albañil</option>
+                                <option value="Ayudante">Ayudante</option>
+                                <option value="Electricista">Electricista</option>
+                                <option value="Fontanero">Fontanero</option>
+                                <option value="Pintor">Pintor</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="fecha_asignacion" class="form-label">Fecha de Asignación</label>
+                            <input type="date" class="form-control" id="fecha_asignacion" name="fecha_asignacion" 
+                                   value="{{ now.strftime('%Y-%m-%d') }}" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="horas_asignadas" class="form-label">Horas Asignadas</label>
+                            <input type="number" class="form-control" id="horas_asignadas" name="horas_asignadas" 
+                                   min="1" step="0.5" value="40" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="costo_hora" class="form-label">Costo por Hora</label>
+                            <div class="input-group">
+                                <span class="input-group-text">L.</span>
+                                <input type="number" class="form-control" id="costo_hora" name="costo_hora" 
+                                       min="0.01" step="0.01" required>
+                            </div>
+                            <div class="form-text">Costo total: L. <span id="costo_total">0.00</span></div>
+                        </div>
+                        <div class="col-12">
+                            <label for="notas" class="form-label">Notas</label>
+                            <textarea class="form-control" id="notas" name="notas" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <input type="hidden" id="cotizacion_id" name="cotizacion_id" value="{{ cotizacion.id }}">
+                    <input type="hidden" id="asignacion_id" name="asignacion_id" value="">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmación para Eliminar -->
+<div class="modal fade" id="eliminarAsignacionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Confirmar Eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro que desea eliminar esta asignación de empleado?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Variables globales
+        const asignarModal = new bootstrap.Modal(document.getElementById('asignarEmpleadoModal'));
+        const eliminarModal = new bootstrap.Modal(document.getElementById('eliminarAsignacionModal'));
+        let asignacionIdAEliminar = null;
+        
+        // Calcular costo total al cambiar horas o costo por hora
+        function calcularCostoTotal() {
+            const horas = parseFloat(document.getElementById('horas_asignadas').value) || 0;
+            const costoHora = parseFloat(document.getElementById('costo_hora').value) || 0;
+            const costoTotal = horas * costoHora;
+            document.getElementById('costo_total').textContent = costoTotal.toFixed(2);
+        }
+        
+        document.getElementById('horas_asignadas').addEventListener('input', calcularCostoTotal);
+        document.getElementById('costo_hora').addEventListener('input', calcularCostoTotal);
+        
+        // Actualizar costo por hora al seleccionar empleado
+        document.getElementById('empleado_id').addEventListener('change', function() {
+            const option = this.options[this.selectedIndex];
+            if (option && option.dataset.sueldo) {
+                const sueldoBase = parseFloat(option.dataset.sueldo);
+                // Calcular costo por hora (sueldo mensual / 30 días / 8 horas) * 1.5 (margen)
+                const costoHora = (sueldoBase / 30 / 8) * 1.5;
+                document.getElementById('costo_hora').value = costoHora.toFixed(2);
+                calcularCostoTotal();
+            }
+        });
+        
+        // Configurar botón para nueva asignación
+        document.getElementById('btnNuevaAsignacion').addEventListener('click', function() {
+            document.getElementById('asignarModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> Asignar Empleado al Proyecto';
+            document.getElementById('asignarEmpleadoForm').reset();
+            document.getElementById('asignacion_id').value = '';
+            document.getElementById('fecha_asignacion').value = new Date().toISOString().split('T')[0];
+            document.getElementById('costo_total').textContent = '0.00';
+            
+            // Habilitar selector de empleado
+            document.getElementById('empleado_id').disabled = false;
+            
+            asignarModal.show();
+        });
+        
+        // Configurar botones para editar asignación
+        document.querySelectorAll('.btn-editar-asignacion').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.getElementById('asignarModalTitle').innerHTML = '<i class="fas fa-edit"></i> Editar Asignación de Empleado';
+                
+                // Llenar formulario con datos de la asignación
+                document.getElementById('asignacion_id').value = this.dataset.id;
+                document.getElementById('empleado_id').value = this.dataset.empleadoId;
+                document.getElementById('rol').value = this.dataset.rol;
+                document.getElementById('horas_asignadas').value = this.dataset.horas;
+                document.getElementById('costo_hora').value = this.dataset.costo;
+                document.getElementById('fecha_asignacion').value = this.dataset.fecha;
+                document.getElementById('notas').value = this.dataset.notas;
+                
+                // Calcular costo total
+                calcularCostoTotal();
+                
+                // Deshabilitar selector de empleado (no se puede cambiar)
+                document.getElementById('empleado_id').disabled = true;
+                
+                asignarModal.show();
+            });
+        });
+        
+        // Configurar botones para eliminar asignación
+        document.querySelectorAll('.btn-eliminar-asignacion').forEach(btn => {
+            btn.addEventListener('click', function() {
+                asignacionIdAEliminar = this.dataset.id;
+                eliminarModal.show();
+            });
+        });
+        
+        // Manejar envío del formulario de asignación
+        document.getElementById('asignarEmpleadoForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            // Enviar solicitud
+            fetch('/guardar-asignacion', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                asignarModal.hide();
+                
+                if (data.success) {
+                    mostrarNotificacion(data.mensaje, 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                asignarModal.hide();
+            });
+        });
+        
+        // Confirmar eliminación
+        document.getElementById('btnConfirmarEliminar').addEventListener('click', function() {
+            if (asignacionIdAEliminar) {
+                // Realizar solicitud AJAX para eliminar
+                fetch(`/eliminar-asignacion/${asignacionIdAEliminar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    eliminarModal.hide();
+                    
+                    if (data.success) {
+                        mostrarNotificacion('Asignación eliminada correctamente', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarNotificacion(`Error: ${data.mensaje}`, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarNotificacion('Error al procesar la solicitud', 'danger');
+                    eliminarModal.hide();
+                });
+            }
+        });
+        
+        // Configurar botón de reporte de costos
+        document.getElementById('btnReporteCostos').addEventListener('click', function() {
+            // Redirigir a la página de reportes o mostrar un modal con el reporte
+            window.location.href = `/reporte-costos-proyecto/${cotizacion.id}`;
+        });
+    });
+</script>
+{% endblock %}

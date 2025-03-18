@@ -32,7 +32,36 @@
                         <i class="fas fa-home"></i> Inicio
                     </a>
                 </li>
-                
+                <!-- Menú desplegable de Planillas -->
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle {% if '/planilla' in request.path or '/empleado' in request.path %}active{% endif %}" 
+       href="#" id="planillasDropdown" role="button" 
+       data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-user-tie"></i> Planillas
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="planillasDropdown">
+        <li>
+            <a class="dropdown-item" href="{{ url_for('empleados') }}">
+                <i class="fas fa-users"></i> Gestión de Empleados
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="{{ url_for('crear_planilla') }}">
+                <i class="fas fa-plus-circle"></i> Nueva Planilla
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="{{ url_for('lista_planillas') }}">
+                <i class="fas fa-history"></i> Historial de Planillas
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" href="{{ url_for('reportes_planillas') }}">
+                <i class="fas fa-chart-line"></i> Reportes
+            </a>
+        </li>
+    </ul>
+</li>
                 <!-- Menú desplegable de Cotizaciones -->
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle {% if '/cotizacion' in request.path %}active{% endif %}" 
